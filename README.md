@@ -6,7 +6,9 @@
   [![Discord](https://img.shields.io/discord/1324785461129322588?color=5865F2&logo=discord&logoColor=white&label=Join%20our%20Discord)](https://discord.gg/9eJhKqJKct)
 </div>
 
-> ⚠️ **Note:** AudioStrike is currently in **Alpha**! Features are being actively developed and more updates are coming soon.
+> ⚠️ **Note:** AudioStrike is currently in **Alpha**! Features are being actively developed and more updates are coming soon. 
+> 
+> 🧪 **We need testers!** It would be incredibly helpful if you could download the mod, test out the features, and report any bugs or ideas in our Discord!
 > 
 > 🎮 **Compatible with version 26.1.2**
 
