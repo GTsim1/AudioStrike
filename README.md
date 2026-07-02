@@ -1,6 +1,6 @@
-# Spotify Mod for Minecraft
+# AudioStrike for Minecraft
 
-A feature-rich Fabric mod for Minecraft that integrates global media controls and a custom kill sound system into your game.
+![AudioStrike Logo](C:\Users\mgtsi\.gemini\antigravity-ide\brain\550eaff1-3be7-4ee5-8eeb-263fb18ffa59\audiostrike_logo_1783009990135.png)
 
 ## ✨ Features
 

@@ -1,8 +1,8 @@
 {
 	"schemaVersion": 1,
-	"id": "spotifymod",
+	"id": "audiostrike",
 	"version": "${version}",
-	"name": "Spotify Mod",
+	"name": "AudioStrike",
 	"description": "In-game global media controller and kill sound integration.",
 	"authors": [
 		"GTSIM"
