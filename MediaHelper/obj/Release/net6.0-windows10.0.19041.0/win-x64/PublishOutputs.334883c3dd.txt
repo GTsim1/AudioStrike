@@ -1,0 +1,2 @@
+H:\Minecraft Mods\Spotify mod\src\main\resources\assets\modid\MediaHelper.pdb
+H:\Minecraft Mods\Spotify mod\src\main\resources\assets\modid\MediaHelper.exe

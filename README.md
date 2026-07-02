@@ -1,9 +1,28 @@
-# Example Mod
+# Spotify Mod for Minecraft
 
-## Setup
+A feature-rich Fabric mod for Minecraft that integrates global media controls and a custom kill sound system into your game.
 
-For setup instructions, please see the [Fabric Documentation page](https://docs.fabricmc.net/develop/getting-started/creating-a-project#setting-up) related to the IDE that you are using.
+## ✨ Features
 
-## License
+- **Global Media Controls:** An elegant, glassmorphic in-game UI to control Spotify, Chrome, Discord, and other media players active on your PC.
+- **Custom Kill Sounds:** Automatically plays custom `.wav` sound clips locally whenever you get a kill in-game.
+- **Integrated Downloader:** Built-in integration with `spotdl` to download audio from Spotify links directly into your `killsounds` folder.
+- **Voice Chat Integration:** Connects with the **Simple Voice Chat** mod to transmit your downloaded sounds directly over your microphone to other players.
+- **Audio Cropping Tool:** A built-in UI tool utilizing FFmpeg to precisely crop your downloaded audio clips to get the perfect drop.
+- **Media Companion:** Includes an invisible C# companion app to securely bridge Windows Media APIs with Minecraft in real-time.
 
-This template is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.
+## 🚀 Installation
+
+1. Download the latest `.jar` from the [Releases](#) tab.
+2. Drop it into your Minecraft `mods` folder.
+3. Ensure you have the [Fabric API](https://modrinth.com/mod/fabric-api) installed.
+4. *(Optional)* Install the [Simple Voice Chat](https://modrinth.com/plugin/simple-voice-chat) mod for the microphone transmission features.
+
+## 🛠️ Usage
+
+- Press **`R`** (default) in-game to open the Media Control Screen.
+- Use the hamburger menu in the top right to access the **Setup Menu**.
+- Paste a Spotify link to download it, and manage your downloaded sounds via the gallery.
+
+## 📄 License
+This project is licensed under the MIT License.

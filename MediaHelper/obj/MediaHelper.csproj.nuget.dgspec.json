@@ -1,0 +1,93 @@
+{
+  "format": 1,
+  "restore": {
+    "H:\\Minecraft Mods\\Spotify mod\\MediaHelper\\MediaHelper.csproj": {}
+  },
+  "projects": {
+    "H:\\Minecraft Mods\\Spotify mod\\MediaHelper\\MediaHelper.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "H:\\Minecraft Mods\\Spotify mod\\MediaHelper\\MediaHelper.csproj",
+        "projectName": "MediaHelper",
+        "projectPath": "H:\\Minecraft Mods\\Spotify mod\\MediaHelper\\MediaHelper.csproj",
+        "packagesPath": "C:\\Users\\mgtsi\\.nuget\\packages\\",
+        "outputPath": "H:\\Minecraft Mods\\Spotify mod\\MediaHelper\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\mgtsi\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net6.0-windows10.0.19041.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net6.0-windows10.0.19041": {
+            "targetAlias": "net6.0-windows10.0.19041.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net6.0-windows10.0.19041": {
+          "targetAlias": "net6.0-windows10.0.19041.0",
+          "dependencies": {
+            "System.Drawing.Common": {
+              "target": "Package",
+              "version": "[6.0.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
+              "version": "[6.0.21, 6.0.21]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Runtime.win-x64",
+              "version": "[6.0.21, 6.0.21]"
+            },
+            {
+              "name": "Microsoft.Windows.SDK.NET.Ref",
+              "version": "[10.0.19041.29, 10.0.19041.29]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
+              "version": "[6.0.21, 6.0.21]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            },
+            "Microsoft.Windows.SDK.NET.Ref": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files (x86)\\dotnet\\sdk\\6.0.413\\RuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "win-x64": {
+          "#import": []
+        }
+      }
+    }
+  }
+}
