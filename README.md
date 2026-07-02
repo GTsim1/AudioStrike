@@ -41,5 +41,7 @@
 - Use the hamburger menu in the top right to access the **Setup Menu**.
 - Paste a Spotify link to download it, and manage your downloaded sounds via the gallery.
 
+> 🛡️ **Antivirus Notice:** Because this mod uses an invisible C# background process (`MediaHelper.exe`) to read your Windows Media APIs, some aggressive antiviruses (like Windows Defender) might flag it as a "false positive". This is completely normal for new, unsigned executables. The code is 100% open-source and viewable in this repository!
+
 ## 📄 License
 This project is licensed under the MIT License.
