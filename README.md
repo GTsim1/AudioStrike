@@ -7,6 +7,8 @@
 </div>
 
 > ⚠️ **Note:** AudioStrike is currently in **Beta**! Features are being actively developed and more updates are coming soon.
+> 
+> 🎮 **Compatible with version 26.1.2**
 
 ## ✨ Features
 
