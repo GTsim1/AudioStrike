@@ -17,6 +17,13 @@
 - **Audio Cropping Tool:** A built-in UI tool utilizing FFmpeg to precisely crop your downloaded audio clips to get the perfect drop.
 - **Media Companion:** Includes an invisible C# companion app to securely bridge Windows Media APIs with Minecraft in real-time.
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="assets/screenshot1.png" width="45%" />
+  <img src="assets/screenshot2.png" width="45%" />
+</p>
+
 ## 🚀 Installation
 
 1. Download the latest `.jar` from the [Releases](https://github.com/GTsim1/AudioStrike/releases) tab.
