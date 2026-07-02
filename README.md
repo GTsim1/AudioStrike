@@ -1,6 +1,10 @@
 # AudioStrike for Minecraft
 
-![AudioStrike Logo](C:\Users\mgtsi\.gemini\antigravity-ide\brain\550eaff1-3be7-4ee5-8eeb-263fb18ffa59\audiostrike_logo_1783009990135.png)
+<div align="center">
+  <img src="assets/logo.png" alt="AudioStrike Logo" width="200"/>
+
+  [![Discord](https://img.shields.io/discord/1324785461129322588?color=5865F2&logo=discord&logoColor=white&label=Join%20our%20Discord)](https://discord.gg/9eJhKqJKct)
+</div>
 
 ## ✨ Features
 
