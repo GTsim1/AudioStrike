@@ -17,7 +17,7 @@
 
 ## 🚀 Installation
 
-1. Download the latest `.jar` from the [Releases](#) tab.
+1. Download the latest `.jar` from the [Releases](https://github.com/GTsim1/AudioStrike/releases) tab.
 2. Drop it into your Minecraft `mods` folder.
 3. Ensure you have the [Fabric API](https://modrinth.com/mod/fabric-api) installed.
 4. *(Optional)* Install the [Simple Voice Chat](https://modrinth.com/plugin/simple-voice-chat) mod for the microphone transmission features.
