@@ -14,21 +14,12 @@
 
 ## ✨ Features
 
-### 🎵 Core Features
-- **In-Game Media Controller:** Press `R` to open a sleek, glassmorphic UI overlay. Play, pause, skip, and adjust volume for your system media (Spotify, YouTube, Apple Music, etc.) directly inside Minecraft without Alt-Tabbing.
-- **Live Track Display:** See exactly what song is currently playing on your PC right on your Minecraft screen.
-- **Voice Chat Integration:** Automatically broadcasts your currently playing music over proximity chat so everyone around you can hear what you're listening to!
-
-### ⚔️ Combat Features
-- **Custom Kill Sounds:** Assign custom audio files that will automatically trigger the moment you slay another player.
-- **Kill Sound Broadcasting:** Your kill sounds are blasted over proximity voice chat for the ultimate flex.
-- **10-Second Auto-Cutoff:** Kill sounds have a strict 10-second timer to ensure long songs don't spam the server during fast-paced PvP.
-
-### 🛠️ Built-in Tools
-- **Audio Gallery Menu:** An in-game file browser to listen to and select your active kill sounds.
-- **In-Game Audio Cropper:** Found the perfect meme audio but it's too long? Trim and crop MP3/WAV files directly inside Minecraft without needing external editing software.
-- **Spotify Downloader:** Built-in integration with `spotdl`. Paste a Spotify link directly into the mod to download it on the fly for your kill sounds.
-- **Windows Media Companion:** Comes with a custom background helper (`MediaHelper.exe`) that hooks flawlessly into Windows to control your media instantly.
+- **Global Media Controls:** An elegant, glassmorphic in-game UI to control Spotify, Chrome, Discord, and other media players active on your PC.
+- **Custom Kill Sounds:** Automatically plays custom `.wav` sound clips locally whenever you get a kill in-game.
+- **Integrated Downloader:** Built-in integration with `spotdl` to download audio from Spotify links directly into your `killsounds` folder.
+- **Voice Chat Integration:** Connects with the **Simple Voice Chat** mod to transmit your downloaded sounds directly over your microphone to other players.
+- **Audio Cropping Tool:** A built-in UI tool utilizing FFmpeg to precisely crop your downloaded audio clips to get the perfect drop.
+- **Media Companion:** Includes an invisible C# companion app to securely bridge Windows Media APIs with Minecraft in real-time.
 
 ## 📸 Screenshots
 
