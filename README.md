@@ -1,7 +1,7 @@
 # AudioStrike for Minecraft
 
 <div align="center">
-  <img src="assets/logo.png?v=2" alt="AudioStrike Logo" width="200"/>
+  <img src="assets/audiostrike_logo.png" alt="AudioStrike Logo" width="200"/>
 
   [![Discord](https://img.shields.io/discord/1324785461129322588?color=5865F2&logo=discord&logoColor=white&label=Join%20our%20Discord)](https://discord.gg/9eJhKqJKct)
 </div>
