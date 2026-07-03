@@ -19,7 +19,7 @@ loom {
 	splitEnvironmentSourceSets()
 
 	mods {
-		"modid" {
+		"audiostrike" {
 			sourceSet sourceSets.main
 			sourceSet sourceSets.client
 		}

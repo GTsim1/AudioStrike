@@ -256,10 +256,24 @@ public class MediaManager {
             return false;
         }
     }
+    private static int killSoundInstanceId = 0;
+
     public static void onKillRegistered(net.minecraft.world.entity.LivingEntity entity) {
         if (!activeKillSoundFile.isEmpty()) {
             LocalSoundPlayer.playKillSound(activeKillSoundFile);
             VoicechatAudioQueue.playSound(activeKillSoundFile);
+            
+            final int currentId = ++killSoundInstanceId;
+            new Thread(() -> {
+                try {
+                    Thread.sleep(10000); // 10 seconds cutoff
+                    if (killSoundInstanceId == currentId) {
+                        LocalSoundPlayer.stopSound();
+                        VoicechatAudioQueue.stop();
+                    }
+                } catch (InterruptedException e) {}
+            }).start();
+
             Minecraft client = Minecraft.getInstance();
             if (client.player != null) {
                 String name = entity.getName().getString();
