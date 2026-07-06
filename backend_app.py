@@ -158,16 +158,20 @@ async def websocket_endpoint(websocket: WebSocket, server_ip: str, username: str
                         
                         try:
                             # 1. Check if user already liked it
+                            print("Step 1: Checking if liked", flush=True)
                             check_resp = requests.get(get_firebase_url(f"user_likes/{safe_user}/{s_key}"), timeout=2)
                             
                             if check_resp.status_code != 200:
+                                print(f"Step 1 Failed: Status {check_resp.status_code}, {check_resp.text}", flush=True)
                                 # Firebase Error (e.g. Permission Denied)
                                 error_msg = str(check_resp.text)
                                 await websocket.send_text(json.dumps({"type": "like_error", "message": f"Firebase Error: {error_msg}"}))
                             elif check_resp.json() is not True:
+                                print("Step 2: User hasn't liked it yet. Putting new like.", flush=True)
                                 # 2. Mark as liked
                                 requests.put(get_firebase_url(f"user_likes/{safe_user}/{s_key}"), json=True)
                                 
+                                print("Step 3: Incrementing likes count.", flush=True)
                                 # 3. Increment likes
                                 current_likes = 0
                                 likes_resp = requests.get(get_firebase_url(f"songs/{s_key}/likes"), timeout=2)
@@ -181,13 +185,17 @@ async def websocket_endpoint(websocket: WebSocket, server_ip: str, username: str
                                 requests.patch(get_firebase_url(f"songs/{s_key}"), json={"name": target_song, "likes": new_likes})
                                 song_likes_cache[target_song] = new_likes
                                 
+                                print("Step 4: Broadcasting server state.", flush=True)
                                 # 4. Re-broadcast to show the new like instantly
                                 await manager.broadcast_server_state(server_ip)
                                 
+                                print("Step 5: Sending like_success.", flush=True)
                                 # 5. Tell the user it succeeded
                                 await websocket.send_text(json.dumps({"type": "like_success", "song": target_song}))
                             else:
+                                print("Step 2 Alternative: User already liked it.", flush=True)
                                 await websocket.send_text(json.dumps({"type": "like_error", "message": "You already liked this song!"}))
+                            print("Like flow completed successfully.", flush=True)
                         except Exception as inner_e:
                             print(f"Firebase Exception: {inner_e}", flush=True)
                             await websocket.send_text(json.dumps({"type": "like_error", "message": f"Python Error: {str(inner_e)}"}))
