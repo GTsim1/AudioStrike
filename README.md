@@ -27,13 +27,11 @@
 
 ## 📸 Screenshots
 
-<p align="center">
-  <img src="assets/screenshot1.png" width="48%" />
-  <img src="assets/screenshot2.png" width="48%" />
-  <br/>
-  <img src="assets/screenshot3.png" width="48%" />
-  <img src="assets/screenshot4.png" width="48%" />
-</p>
+| Global Media Controls | Settings Menu |
+|:---:|:---:|
+| <img src="assets/screenshot1.png" width="400"> | <img src="assets/screenshot3.png" width="400"> |
+| **Download Manager** | **Now Playing Nametag** |
+| <img src="assets/screenshot2.png" width="400"> | <img src="assets/screenshot4.png" width="400"> |
 
 ## 🚀 Installation
 
