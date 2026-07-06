@@ -232,10 +232,12 @@ async def websocket_endpoint(websocket: WebSocket, server_ip: str, username: str
                                 current_likes = likes_resp.json()
                                 if current_likes and isinstance(current_likes, int) and current_likes > 0:
                                     requests.put(get_firebase_url(f"songs/{s_key}/likes"), json=current_likes - 1, timeout=2)
+                                    song_likes_cache[target_song] = current_likes - 1
                                     
                                     # Delete from leaderboard if likes hit 0
                                     if current_likes - 1 == 0:
                                         requests.delete(get_firebase_url(f"songs/{s_key}"), timeout=2)
+                                        song_likes_cache.pop(target_song, None)
                                 
                                 await manager.broadcast_server_state(server_ip)
                                 await websocket.send_text(json.dumps({"type": "unlike_success", "song": target_song}))
