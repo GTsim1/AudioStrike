@@ -231,7 +231,11 @@ public class MediaManager {
                                          playbackSpeed = json.get("PlaybackSpeed").getAsDouble();
                                          timelineUpdateTime = json.get("TimelineUpdateTime").getAsLong();
                                          
-                                         MediaControlScreen.isFavorited = likedSongs.contains(title);
+                                         String currentSongStr = title;
+                                         if (artist != null && !artist.isEmpty() && !artist.equals("Local Playlist")) {
+                                             currentSongStr += " - " + artist;
+                                         }
+                                         MediaControlScreen.isFavorited = likedSongs.contains(title) || likedSongs.contains(currentSongStr);
                                          
                                          if (songChanged) {
                                              artworkPath = "";
@@ -343,6 +347,33 @@ public class MediaManager {
         }
     }
     
+    public static void setLikedLocally() {
+        if (title.isEmpty()) return;
+        likedSongs.add(title);
+        String currentSongStr = title;
+        if (artist != null && !artist.isEmpty() && !artist.equals("Local Playlist")) {
+            currentSongStr += " - " + artist;
+            likedSongs.add(currentSongStr);
+        }
+        MediaControlScreen.isFavorited = true;
+        if (likedSongsFile != null) {
+            try {
+                Files.write(likedSongsFile.toPath(), likedSongs);
+            } catch (Exception e) {}
+        }
+    }
+
+    public static void setSongLikedLocally(String songName) {
+        if (songName == null || songName.isEmpty()) return;
+        likedSongs.add(songName);
+        MediaControlScreen.isFavorited = true;
+        if (likedSongsFile != null) {
+            try {
+                Files.write(likedSongsFile.toPath(), likedSongs);
+            } catch (Exception e) {}
+        }
+    }
+
     public static void toggleLike() {
         if (title.isEmpty()) return;
         
@@ -351,11 +382,11 @@ public class MediaManager {
             currentSong += " - " + artist;
         }
         
-        // Send a global like instead of saving locally!
+        // Send a global like
         ServerTracker.sendLike(currentSong);
         
-        // Update the visual heart to be pink immediately
-        MediaControlScreen.isFavorited = true;
+        // Save it locally so the heart stays pink visually
+        setLikedLocally();
     }
 
     public static void updateArtworkTexture(Minecraft client) {

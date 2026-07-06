@@ -194,7 +194,11 @@ async def websocket_endpoint(websocket: WebSocket, server_ip: str, username: str
                                 await websocket.send_text(json.dumps({"type": "like_success", "song": target_song}))
                             else:
                                 print("Step 2 Alternative: User already liked it.", flush=True)
-                                await websocket.send_text(json.dumps({"type": "like_error", "message": "You already liked this song!"}))
+                                await websocket.send_text(json.dumps({
+                                    "type": "like_error", 
+                                    "message": "You already liked this song!",
+                                    "song": target_song
+                                }))
                             print("Like flow completed successfully.", flush=True)
                         except Exception as inner_e:
                             print(f"Firebase Exception: {inner_e}", flush=True)

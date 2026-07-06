@@ -176,11 +176,16 @@ public class ServerTracker {
                                         
                                     } else if (type.equals("like_success")) {
                                         String song = responseJson.get("song").getAsString();
+                                        com.example.client.MediaManager.setSongLikedLocally(song);
                                         if (client.player != null) {
                                             client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7aYou liked the song: \u00a7f" + song + " \u2665"));
                                         }
                                     } else if (type.equals("like_error")) {
                                         String errMsg = responseJson.get("message").getAsString();
+                                        if (errMsg.equals("You already liked this song!") && responseJson.has("song")) {
+                                            String song = responseJson.get("song").getAsString();
+                                            com.example.client.MediaManager.setSongLikedLocally(song);
+                                        }
                                         if (client.player != null) {
                                             client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7c" + errMsg));
                                         }
