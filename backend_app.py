@@ -26,6 +26,9 @@ def safe_key(song: str) -> str:
 song_likes_cache: Dict[str, int] = {}
 # Cooldown cache to prevent spam (username -> timestamp)
 user_cooldowns: Dict[str, float] = {}
+# IP Ban tracking (ip -> strikes) and (ip -> unban_timestamp)
+ip_strikes: Dict[str, int] = {}
+banned_ips: Dict[str, float] = {}
 
 @app.get("/")
 def read_root():
@@ -131,6 +134,19 @@ def is_valid_song(song: str) -> bool:
 
 @app.websocket("/ws/{server_ip}/{username}")
 async def websocket_endpoint(websocket: WebSocket, server_ip: str, username: str):
+    client_ip = websocket.headers.get("x-forwarded-for")
+    if not client_ip:
+        client_ip = websocket.client.host if websocket.client else "unknown"
+        
+    if client_ip in banned_ips:
+        if time.time() < banned_ips[client_ip]:
+            await websocket.close(code=1008, reason="Banned")
+            return
+        else:
+            del banned_ips[client_ip]
+            if client_ip in ip_strikes:
+                del ip_strikes[client_ip]
+
     await manager.connect(websocket, server_ip, username)
     try:
         while True:
@@ -152,7 +168,15 @@ async def websocket_endpoint(websocket: WebSocket, server_ip: str, username: str
                         now = time.time()
                         last_action = user_cooldowns.get(username, 0)
                         if now - last_action < 1.0:
-                            await websocket.send_text(json.dumps({"type": "like_error", "message": "Please wait a second before clicking again!"}))
+                            strikes = ip_strikes.get(client_ip, 0) + 1
+                            ip_strikes[client_ip] = strikes
+                            if strikes >= 5:
+                                banned_ips[client_ip] = now + (15 * 3600)
+                                await websocket.send_text(json.dumps({"type": "like_error", "message": "You have been banned for 15 hours for spamming."}))
+                                await websocket.close(code=1008, reason="Spamming")
+                                return
+                                
+                            await websocket.send_text(json.dumps({"type": "like_error", "message": f"Please wait a second! (Strike {strikes}/5)"}))
                             continue
                         user_cooldowns[username] = now
                     
