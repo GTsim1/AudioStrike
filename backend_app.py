@@ -145,44 +145,58 @@ async def websocket_endpoint(websocket: WebSocket, server_ip: str, username: str
                 elif "action" in payload:
                     action = payload["action"]
                     
-                    if action == "like" and "song" in payload and FIREBASE_URL:
+                    if action == "like" and "song" in payload:
                         target_song = payload["song"]
+                        print(f"Received like action for '{target_song}' from '{username}'", flush=True)
+                        
+                        if not FIREBASE_URL:
+                            await websocket.send_text(json.dumps({"type": "like_error", "message": "Firebase URL is missing in server secrets!"}))
+                            continue
+                            
                         s_key = safe_key(target_song)
                         safe_user = safe_key(username)
                         
-                        # 1. Check if user already liked it
-                        check_resp = requests.get(get_firebase_url(f"user_likes/{safe_user}/{s_key}"), timeout=2)
-                        
-                        if check_resp.status_code != 200:
-                            # Firebase Error (e.g. Permission Denied)
-                            error_msg = str(check_resp.text)
-                            await websocket.send_text(json.dumps({"type": "like_error", "message": f"Firebase Error: {error_msg}"}))
-                        elif check_resp.json() is not True:
-                            # 2. Mark as liked
-                            requests.put(get_firebase_url(f"user_likes/{safe_user}/{s_key}"), json=True)
+                        try:
+                            # 1. Check if user already liked it
+                            check_resp = requests.get(get_firebase_url(f"user_likes/{safe_user}/{s_key}"), timeout=2)
                             
-                            # 3. Increment likes
-                            current_likes = 0
-                            likes_resp = requests.get(get_firebase_url(f"songs/{s_key}/likes"), timeout=2)
-                            if likes_resp.status_code == 200 and likes_resp.json() is not None:
-                                try:
-                                    current_likes = int(likes_resp.json())
-                                except ValueError:
-                                    pass
+                            if check_resp.status_code != 200:
+                                # Firebase Error (e.g. Permission Denied)
+                                error_msg = str(check_resp.text)
+                                await websocket.send_text(json.dumps({"type": "like_error", "message": f"Firebase Error: {error_msg}"}))
+                            elif check_resp.json() is not True:
+                                # 2. Mark as liked
+                                requests.put(get_firebase_url(f"user_likes/{safe_user}/{s_key}"), json=True)
                                 
-                            new_likes = current_likes + 1
-                            requests.patch(get_firebase_url(f"songs/{s_key}"), json={"name": target_song, "likes": new_likes})
-                            song_likes_cache[target_song] = new_likes
-                            
-                            # 4. Re-broadcast to show the new like instantly
-                            await manager.broadcast_server_state(server_ip)
-                            
-                            # 5. Tell the user it succeeded
-                            await websocket.send_text(json.dumps({"type": "like_success", "song": target_song}))
-                        else:
-                            await websocket.send_text(json.dumps({"type": "like_error", "message": "You already liked this song!"}))
+                                # 3. Increment likes
+                                current_likes = 0
+                                likes_resp = requests.get(get_firebase_url(f"songs/{s_key}/likes"), timeout=2)
+                                if likes_resp.status_code == 200 and likes_resp.json() is not None:
+                                    try:
+                                        current_likes = int(likes_resp.json())
+                                    except ValueError:
+                                        pass
+                                    
+                                new_likes = current_likes + 1
+                                requests.patch(get_firebase_url(f"songs/{s_key}"), json={"name": target_song, "likes": new_likes})
+                                song_likes_cache[target_song] = new_likes
+                                
+                                # 4. Re-broadcast to show the new like instantly
+                                await manager.broadcast_server_state(server_ip)
+                                
+                                # 5. Tell the user it succeeded
+                                await websocket.send_text(json.dumps({"type": "like_success", "song": target_song}))
+                            else:
+                                await websocket.send_text(json.dumps({"type": "like_error", "message": "You already liked this song!"}))
+                        except Exception as inner_e:
+                            print(f"Firebase Exception: {inner_e}", flush=True)
+                            await websocket.send_text(json.dumps({"type": "like_error", "message": f"Python Error: {str(inner_e)}"}))
 
-                    elif action == "get_top" and FIREBASE_URL:
+                    elif action == "get_top":
+                        if not FIREBASE_URL:
+                            await websocket.send_text(json.dumps({"type": "like_error", "message": "Firebase URL is missing!"}))
+                            continue
+                            
                         # Fetch all songs
                         resp = requests.get(get_firebase_url("songs"), timeout=3)
                         if resp.status_code == 200 and resp.json():
