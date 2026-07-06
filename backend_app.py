@@ -4,6 +4,10 @@ import json
 
 app = FastAPI()
 
+@app.get("/")
+def read_root():
+    return {"status": "AudioStrike Server is Running!"}
+
 # Store active websocket connections by server IP
 # server_ip -> dict of {websocket: username}
 active_connections: Dict[str, Dict[WebSocket, str]] = {}
