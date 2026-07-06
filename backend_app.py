@@ -20,6 +20,10 @@ class ConnectionManager:
         if server_ip not in active_connections:
             active_connections[server_ip] = {}
         active_connections[server_ip][websocket] = username
+        
+        total_players = len(active_connections[server_ip])
+        print(f"[+] Player '{username}' connected to server '{server_ip}'. Total players on server: {total_players}")
+        
         # Send current state of the server immediately upon connection
         await self.broadcast_server_state(server_ip)
 
@@ -29,6 +33,13 @@ class ConnectionManager:
             if username and username in user_songs:
                 # Optional: remove their song when they disconnect
                 del user_songs[username]
+                
+            total_players = len(active_connections[server_ip])
+            print(f"[-] Player '{username}' disconnected from server '{server_ip}'. Total players on server: {total_players}")
+            
+            # Clean up empty servers
+            if total_players == 0:
+                del active_connections[server_ip]
 
     async def broadcast_server_state(self, server_ip: str):
         if server_ip not in active_connections:
