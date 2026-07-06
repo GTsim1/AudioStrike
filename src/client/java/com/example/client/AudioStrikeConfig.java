@@ -18,6 +18,7 @@ public class AudioStrikeConfig {
     public boolean showAllCharacters = false;
     public boolean showOtherPlayersSongs = true;
     public boolean broadcastMySong = true;
+    public boolean showLikesOnNametag = true;
 
     private static AudioStrikeConfig INSTANCE;
 

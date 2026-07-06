@@ -48,8 +48,11 @@ public class AvatarRendererMixin {
             // Added leading space so Dawn's background box padding covers the left edge properly
             String iconChar = FabricLoader.getInstance().isModLoaded("dawn") ? "\uE001" : "\uE000";
             // Check if the song has likes
-            Integer likes = com.example.client.ServerTracker.activeUsersOnServerLikes.get(playerName);
-            String likeSuffix = (likes != null && likes > 0) ? " \u00a7c(" + likes + " \u2665)\u00a7f" : "";
+            String likeSuffix = "";
+            if (config.showLikesOnNametag) {
+                Integer likes = com.example.client.ServerTracker.activeUsersOnServerLikes.get(playerName);
+                likeSuffix = (likes != null && likes > 0) ? " \u00a7c(" + likes + " \u2665)\u00a7f" : "";
+            }
 
             // Added a single trailing space so it doesn't end abruptly
             Component songComponent = Component.literal(" " + iconChar + " " + displaySong + likeSuffix + " ");

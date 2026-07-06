@@ -56,6 +56,15 @@ public class AudioStrikeSettingsScreen extends Screen {
                 }
         ).bounds(centerX - 100, startY + 75, 200, 20).build());
 
+        // Show Likes on Nametag Toggle
+        this.addRenderableWidget(Button.builder(
+                Component.literal("Show Likes: " + (config.showLikesOnNametag ? "ON" : "OFF")),
+                button -> {
+                    config.showLikesOnNametag = !config.showLikesOnNametag;
+                    button.setMessage(Component.literal("Show Likes: " + (config.showLikesOnNametag ? "ON" : "OFF")));
+                }
+        ).bounds(centerX + 110, startY + 75, 120, 20).build());
+
         // Max Characters Buttons (- / +)
         this.addRenderableWidget(Button.builder(
                 Component.literal("-"),
