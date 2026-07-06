@@ -237,14 +237,18 @@ public class ServerTracker {
     }
 
     public static void sendLike(String song) {
-        if (webSocket != null && webSocket.getSubprotocol() != null) {
-            // Check if socket is open. CompletableFuture tricks aside, just try send
+        if (webSocket != null) {
             try {
                 JsonObject payload = new JsonObject();
                 payload.addProperty("action", "like");
                 payload.addProperty("song", song);
                 webSocket.sendText(payload.toString(), true);
             } catch (Exception e) {}
+        } else {
+            Minecraft client = Minecraft.getInstance();
+            if (client.player != null) {
+                client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7cError: Not connected to backend server."));
+            }
         }
     }
 
@@ -255,6 +259,11 @@ public class ServerTracker {
                 payload.addProperty("action", "get_top");
                 webSocket.sendText(payload.toString(), true);
             } catch (Exception e) {}
+        } else {
+            Minecraft client = Minecraft.getInstance();
+            if (client.player != null) {
+                client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7cError: Not connected to backend server."));
+            }
         }
     }
 }

@@ -345,18 +345,17 @@ public class MediaManager {
     
     public static void toggleLike() {
         if (title.isEmpty()) return;
-        if (likedSongs.contains(title)) {
-            likedSongs.remove(title);
-            MediaControlScreen.isFavorited = false;
-        } else {
-            likedSongs.add(title);
-            MediaControlScreen.isFavorited = true;
+        
+        String currentSong = title;
+        if (artist != null && !artist.isEmpty() && !artist.equals("Local Playlist")) {
+            currentSong += " - " + artist;
         }
-        if (likedSongsFile != null) {
-            try {
-                Files.write(likedSongsFile.toPath(), likedSongs);
-            } catch (Exception e) {}
-        }
+        
+        // Send a global like instead of saving locally!
+        ServerTracker.sendLike(currentSong);
+        
+        // Update the visual heart to be pink immediately
+        MediaControlScreen.isFavorited = true;
     }
 
     public static void updateArtworkTexture(Minecraft client) {
