@@ -15,10 +15,14 @@
 ## ✨ Features
 
 - **Global Media Controls:** An elegant, glassmorphic in-game UI to control Spotify, Chrome, Discord, and other media players active on your PC.
+- **Now Playing Nametags:** Seamlessly broadcasts your currently playing song to the server so it floats above your nametag in-game! Includes scrolling animations for long titles.
+- **Interactive Spotify Search:** Look at any player and press the **`V`** keybind to instantly open a web search for the exact song they are listening to!
+- **Privacy & Security:** Built-in "Privacy Filters" that automatically block YouTube/Twitch streams from being broadcasted, plus a server-side firewall to block in-game spam/advertisements.
 - **Custom Kill Sounds:** Automatically plays custom `.wav` sound clips locally whenever you get a kill in-game.
 - **Integrated Downloader:** Built-in integration with `spotdl` to download audio from Spotify links directly into your `killsounds` folder.
-- **Voice Chat Integration:** Connects with the **Simple Voice Chat** mod to transmit your downloaded sounds directly over your microphone to other players.
+- **Voice Chat Integration:** Connects with the **Simple Voice Chat** mod (with high-quality, crisp FFmpeg audio processing) to transmit your downloaded sounds directly over your microphone to other players.
 - **Audio Cropping Tool:** A built-in UI tool utilizing FFmpeg to precisely crop your downloaded audio clips to get the perfect drop.
+- **Customizable Settings:** A dedicated settings menu to toggle animations, adjust nametag lengths, and hide your song if you want to go incognito.
 - **Media Companion:** Includes an invisible C# companion app to securely bridge Windows Media APIs with Minecraft in real-time.
 
 ## 📸 Screenshots
