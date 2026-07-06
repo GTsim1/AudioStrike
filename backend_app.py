@@ -1,8 +1,28 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from typing import Dict, List
 import json
+import os
+import requests
+import base64
+import asyncio
 
 app = FastAPI()
+
+FIREBASE_URL = os.environ.get("FIREBASE_URL", "")
+FIREBASE_SECRET = os.environ.get("FIREBASE_SECRET", "")
+
+def get_firebase_url(path: str) -> str:
+    url = f"{FIREBASE_URL.rstrip('/')}/{path}.json"
+    if FIREBASE_SECRET:
+        url += f"?auth={FIREBASE_SECRET}"
+    return url
+
+def safe_key(song: str) -> str:
+    # Firebase keys cannot contain . # $ [ ]
+    return base64.urlsafe_b64encode(song.encode('utf-8')).decode('utf-8').rstrip('=')
+
+# In-memory cache for song likes to reduce DB reads
+song_likes_cache: Dict[str, int] = {}
 
 @app.get("/")
 def read_root():
@@ -53,9 +73,22 @@ class ConnectionManager:
         players = []
         for ws, uname in active_connections[server_ip].items():
             song = user_songs.get(uname, "")
-            players.append({"username": uname, "song": song})
+            likes = 0
+            if song:
+                if song in song_likes_cache:
+                    likes = song_likes_cache[song]
+                elif FIREBASE_URL:
+                    # Fetch likes from Firebase in the background (or block briefly)
+                    try:
+                        resp = requests.get(get_firebase_url(f"songs/{safe_key(song)}/likes"), timeout=2)
+                        if resp.status_code == 200 and resp.json() is not None:
+                            likes = int(resp.json())
+                            song_likes_cache[song] = likes
+                    except Exception:
+                        pass
+            players.append({"username": uname, "song": song, "likes": likes})
             
-        message = json.dumps({"players": players})
+        message = json.dumps({"type": "state", "players": players})
         
         # Broadcast to everyone on the server
         for ws in list(active_connections[server_ip].keys()):
@@ -99,20 +132,67 @@ async def websocket_endpoint(websocket: WebSocket, server_ip: str, username: str
     try:
         while True:
             data = await websocket.receive_text()
-            # Expecting a JSON payload: {"song": "New Song Name"}
             try:
                 payload = json.loads(data)
-                if "song" in payload:
+                
+                if "song" in payload and "action" not in payload:
                     new_song = payload["song"]
                     if is_valid_song(new_song):
                         user_songs[username] = new_song
                         # Broadcast the new state to everyone on the server
                         await manager.broadcast_server_state(server_ip)
-                    else:
-                        # If they send an invalid/ad song, secretly drop it to prevent spam
-                        pass
+                        
+                elif "action" in payload:
+                    action = payload["action"]
+                    
+                    if action == "like" and "song" in payload and FIREBASE_URL:
+                        target_song = payload["song"]
+                        s_key = safe_key(target_song)
+                        safe_user = safe_key(username)
+                        
+                        # 1. Check if user already liked it
+                        check_resp = requests.get(get_firebase_url(f"user_likes/{safe_user}/{s_key}"), timeout=2)
+                        if check_resp.json() is not True:
+                            # 2. Mark as liked
+                            requests.put(get_firebase_url(f"user_likes/{safe_user}/{s_key}"), json=True)
+                            
+                            # 3. Increment likes
+                            current_likes = 0
+                            likes_resp = requests.get(get_firebase_url(f"songs/{s_key}/likes"), timeout=2)
+                            if likes_resp.status_code == 200 and likes_resp.json() is not None:
+                                current_likes = int(likes_resp.json())
+                                
+                            new_likes = current_likes + 1
+                            requests.patch(get_firebase_url(f"songs/{s_key}"), json={"name": target_song, "likes": new_likes})
+                            song_likes_cache[target_song] = new_likes
+                            
+                            # 4. Re-broadcast to show the new like instantly
+                            await manager.broadcast_server_state(server_ip)
+                            
+                            # 5. Tell the user it succeeded
+                            await websocket.send_text(json.dumps({"type": "like_success", "song": target_song}))
+                        else:
+                            await websocket.send_text(json.dumps({"type": "like_error", "message": "You already liked this song!"}))
+
+                    elif action == "get_top" and FIREBASE_URL:
+                        # Fetch all songs
+                        resp = requests.get(get_firebase_url("songs"), timeout=3)
+                        if resp.status_code == 200 and resp.json():
+                            songs_data = resp.json()
+                            songs_list = []
+                            for k, v in songs_data.items():
+                                if v and "name" in v and "likes" in v:
+                                    songs_list.append({"name": v["name"], "likes": int(v["likes"])})
+                            
+                            # Sort by likes descending
+                            songs_list.sort(key=lambda x: x["likes"], reverse=True)
+                            top_10 = songs_list[:10]
+                            await websocket.send_text(json.dumps({"type": "top_songs", "songs": top_10}))
+
             except json.JSONDecodeError:
                 pass
+            except Exception as e:
+                print(f"WS Error: {e}")
     except WebSocketDisconnect:
         manager.disconnect(websocket, server_ip)
         await manager.broadcast_server_state(server_ip)

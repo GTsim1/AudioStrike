@@ -19,6 +19,9 @@ public class ServerTracker {
     // Map of Username -> Current Song
     public static final ConcurrentHashMap<String, String> activeUsersOnServer = new ConcurrentHashMap<>();
     
+    // Map of Username -> Likes of their current song
+    public static final ConcurrentHashMap<String, Integer> activeUsersOnServerLikes = new ConcurrentHashMap<>();
+    
     private static Thread trackerThread;
     private static boolean isRunning = false;
     private static WebSocket webSocket;
@@ -77,6 +80,7 @@ public class ServerTracker {
                         }
                         currentConnectedServer = "";
                         activeUsersOnServer.clear();
+                        activeUsersOnServerLikes.clear();
                     }
                     
                     // Sleep for 1 second before checking if song changed
@@ -144,20 +148,65 @@ public class ServerTracker {
                             
                             try {
                                 JsonObject responseJson = JsonParser.parseString(message).getAsJsonObject();
-                                if (responseJson.has("players")) {
+                                
+                                if (responseJson.has("type")) {
+                                    String type = responseJson.get("type").getAsString();
+                                    Minecraft client = Minecraft.getInstance();
+                                    
+                                    if (type.equals("state") && responseJson.has("players")) {
+                                        JsonArray players = responseJson.getAsJsonArray("players");
+                                        ConcurrentHashMap<String, String> newUsers = new ConcurrentHashMap<>();
+                                        ConcurrentHashMap<String, Integer> newLikes = new ConcurrentHashMap<>();
+                                        
+                                        for (JsonElement element : players) {
+                                            JsonObject playerObj = element.getAsJsonObject();
+                                            String uName = playerObj.get("username").getAsString();
+                                            String sName = playerObj.get("song").getAsString();
+                                            int likes = playerObj.has("likes") ? playerObj.get("likes").getAsInt() : 0;
+                                            
+                                            newUsers.put(uName, sName);
+                                            newLikes.put(uName, likes);
+                                        }
+                                        
+                                        activeUsersOnServer.clear();
+                                        activeUsersOnServer.putAll(newUsers);
+                                        
+                                        activeUsersOnServerLikes.clear();
+                                        activeUsersOnServerLikes.putAll(newLikes);
+                                        
+                                    } else if (type.equals("like_success")) {
+                                        String song = responseJson.get("song").getAsString();
+                                        if (client.player != null) {
+                                            client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7aYou liked the song: \u00a7f" + song + " \u2665"));
+                                        }
+                                    } else if (type.equals("like_error")) {
+                                        String errMsg = responseJson.get("message").getAsString();
+                                        if (client.player != null) {
+                                            client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7c" + errMsg));
+                                        }
+                                    } else if (type.equals("top_songs")) {
+                                        JsonArray songs = responseJson.getAsJsonArray("songs");
+                                        if (client.player != null) {
+                                            client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a76--- Global AudioStrike Leaderboard ---"));
+                                            for (int i = 0; i < songs.size(); i++) {
+                                                JsonObject s = songs.get(i).getAsJsonObject();
+                                                String name = s.get("name").getAsString();
+                                                int likes = s.get("likes").getAsInt();
+                                                client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7e" + (i + 1) + ". \u00a7f" + name + " \u00a7c(\u2665 " + likes + ")"));
+                                            }
+                                            client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a76----------------------------------------"));
+                                        }
+                                    }
+                                } else if (responseJson.has("players")) {
+                                    // Fallback for old backend
                                     JsonArray players = responseJson.getAsJsonArray("players");
-                                    
-                                    // Temporarily store the newly fetched active users
                                     ConcurrentHashMap<String, String> newUsers = new ConcurrentHashMap<>();
-                                    
                                     for (JsonElement element : players) {
                                         JsonObject playerObj = element.getAsJsonObject();
                                         String uName = playerObj.get("username").getAsString();
                                         String sName = playerObj.get("song").getAsString();
                                         newUsers.put(uName, sName);
                                     }
-                                    
-                                    // Swap the maps
                                     activeUsersOnServer.clear();
                                     activeUsersOnServer.putAll(newUsers);
                                 }
@@ -184,6 +233,28 @@ public class ServerTracker {
         } catch (Exception e) {
             System.err.println("Failed to connect WebSocket: " + e.getMessage());
             webSocket = null;
+        }
+    }
+
+    public static void sendLike(String song) {
+        if (webSocket != null && webSocket.getSubprotocol() != null) {
+            // Check if socket is open. CompletableFuture tricks aside, just try send
+            try {
+                JsonObject payload = new JsonObject();
+                payload.addProperty("action", "like");
+                payload.addProperty("song", song);
+                webSocket.sendText(payload.toString(), true);
+            } catch (Exception e) {}
+        }
+    }
+
+    public static void fetchTopSongs() {
+        if (webSocket != null) {
+            try {
+                JsonObject payload = new JsonObject();
+                payload.addProperty("action", "get_top");
+                webSocket.sendText(payload.toString(), true);
+            } catch (Exception e) {}
         }
     }
 }

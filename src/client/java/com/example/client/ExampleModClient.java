@@ -43,6 +43,22 @@ public class ExampleModClient implements ClientModInitializer {
             CATEGORY
         ));
 
+        // Register key mapping to like a song (Default: L)
+        KeyMapping likeSongKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+            "key.spotify_mod.like",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_L,
+            CATEGORY
+        ));
+
+        // Register key mapping for Leaderboard (Default: O)
+        KeyMapping leaderboardKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+            "key.spotify_mod.leaderboard",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_O,
+            CATEGORY
+        ));
+
         // Listen for client tick to check for key press
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openMediaControlKey.consumeClick()) {
@@ -69,6 +85,28 @@ public class ExampleModClient implements ClientModInitializer {
                             client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7c" + playerName + " is not currently listening to anything."));
                         }
                     }
+                }
+            }
+            while (likeSongKey.consumeClick()) {
+                if (client.crosshairPickEntity != null && client.crosshairPickEntity instanceof net.minecraft.world.entity.player.Player targetPlayer) {
+                    String playerName = targetPlayer.getName().getString();
+                    String song = ServerTracker.activeUsersOnServer.get(playerName);
+                    if (song != null && !song.isEmpty()) {
+                        ServerTracker.sendLike(song);
+                        if (client.player != null) {
+                            client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7eSending like for: \u00a7f" + song + "..."));
+                        }
+                    } else {
+                        if (client.player != null) {
+                            client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7c" + playerName + " is not currently listening to anything."));
+                        }
+                    }
+                }
+            }
+            while (leaderboardKey.consumeClick()) {
+                ServerTracker.fetchTopSongs();
+                if (client.player != null) {
+                    client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7eFetching global leaderboard from Firebase..."));
                 }
             }
         });
