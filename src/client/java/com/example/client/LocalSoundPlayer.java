@@ -142,6 +142,17 @@ public class LocalSoundPlayer {
         }
     }
 
+    public static void setLooping(boolean loop) {
+        synchronized (LocalSoundPlayer.class) {
+            if (clip != null && clip.isOpen()) {
+                if (loop) {
+                    clip.loop(Clip.LOOP_CONTINUOUSLY);
+                } else {
+                    clip.loop(0);
+                }
+            }
+        }
+    }
     public static void setVolume(float volume) {
         previewVolume = Math.max(0.0f, Math.min(1.0f, volume));
         synchronized (LocalSoundPlayer.class) {

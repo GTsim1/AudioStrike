@@ -21,17 +21,37 @@ public class MediaControlScreen extends Screen {
     private boolean isDropdownOpen = false;
     private boolean isSetupOpen = false;
     private net.minecraft.client.gui.components.EditBox linkField;
+    private long lastGalleryClickTime = 0;
+    private String lastGalleryClickedSound = "";
     private boolean showFfmpegWarning = false;
     
-    // UI Local Favorites/Shuffle states (since Windows doesn't always sync Heart state)
     public static boolean isFavorited = false;
-    public static boolean isShuffleEnabled = false;
+    public static boolean isRepeatEnabled = false;
+    public static boolean isMicActive = false;
+    public static boolean isDirectMicActive = false;
 
     private int activeVolumeSliderIndex = -1;
     private boolean isDraggingVolumeSlider = false;
+    public static boolean isMainVolumeSliderOpen = false;
+    public static boolean isDraggingMainVolumeSlider = false;
 
     // Mic test toggle state: tracks which sound file is being transmitted via mic (empty = off)
     public static volatile String currentMicFile = "";
+    
+    private double galleryScrollOffset = 0;
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if (isSetupOpen) {
+            java.util.List<String> sounds = LocalSoundPlayer.getAvailableSounds();
+            int maxScroll = Math.max(0, sounds.size() * 32 - 120);
+            galleryScrollOffset -= verticalAmount * 20;
+            if (galleryScrollOffset < 0) galleryScrollOffset = 0;
+            if (galleryScrollOffset > maxScroll) galleryScrollOffset = maxScroll;
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+    }
 
     public MediaControlScreen() {
         super(Component.literal("Media Control"));
@@ -39,7 +59,7 @@ public class MediaControlScreen extends Screen {
 
     @Override
     protected void init() {
-        int actualHeight = isSetupOpen ? 220 : CARD_HEIGHT;
+        int actualHeight = isSetupOpen ? 300 : CARD_HEIGHT;
         this.startX = (this.width - CARD_WIDTH) / 2;
         this.startY = (this.height - actualHeight) / 2;
         this.isDraggingSlider = false;
@@ -80,13 +100,13 @@ public class MediaControlScreen extends Screen {
         // Draw Card Border (subtle semi-transparent Glassmorphic rounded outline)
         drawRoundedOutline(guiGraphics, startX, startY, CARD_WIDTH, CARD_HEIGHT, 0x33FFFFFF);
 
-        // Calculate top-right menu button hover state
-        int menuX = startX + CARD_WIDTH - 25;
-        int menuY = startY + 12;
+        // Calculate bottom-right menu button hover state
+        int menuX = startX + 225;
+        int menuY = startY + 106;
         boolean isMenuHovered = isHovering(mouseX, mouseY, menuX - 3, menuY - 3, 16, 16);
 
         if (isSetupOpen) {
-            int setupHeight = 220;
+            int setupHeight = 300;
             // Draw SpotDL Setup Panel (solid dark glass layer)
             drawRoundedRect(guiGraphics, startX + 5, startY + 5, CARD_WIDTH - 10, setupHeight, 0xF5121212);
             drawRoundedOutline(guiGraphics, startX + 5, startY + 5, CARD_WIDTH - 10, setupHeight, 0x22FFFFFF);
@@ -148,146 +168,105 @@ public class MediaControlScreen extends Screen {
                     int noSoundsWidth = this.font.width("No sounds downloaded yet.");
                     guiGraphics.text(this.font, "No sounds downloaded yet.", startX + (CARD_WIDTH - noSoundsWidth) / 2, listY, 0xFF666666, false);
                 } else {
-                    for (int i = 0; i < Math.min(sounds.size(), 3); i++) {
+                    guiGraphics.enableScissor(startX, startY + 160, startX + CARD_WIDTH, startY + 290);
+                    for (int i = 0; i < sounds.size(); i++) {
                         String sound = sounds.get(i);
-                        String truncated = truncateString(sound, CARD_WIDTH - 80);
-                        int sWidth = this.font.width(truncated);
-                        int spacing = 6;
-                        
-                        boolean isSliderOpen = (activeVolumeSliderIndex == i);
-                        int playIconWidth = 7;
-                        int speakerIconWidth = 7;
-                        int micIconWidth = 7;
-                        int volumeSliderWidth = 40;
-                        
-                        int binIconWidth = 9;
-                        int scissorsIconWidth = 9;
-                        
-                        int textX, playX, speakerX, micX, scissorsX, binX;
-                        int totalRowWidth;
-                        
-                        if (isSliderOpen) {
-                            totalRowWidth = sWidth + spacing + volumeSliderWidth + spacing + speakerIconWidth + spacing + micIconWidth + spacing + scissorsIconWidth + spacing + binIconWidth;
-                        } else {
-                            totalRowWidth = sWidth + spacing + playIconWidth + spacing + speakerIconWidth + spacing + micIconWidth + spacing + scissorsIconWidth + spacing + binIconWidth;
+                        String truncated = sound;
+                        if (truncated.length() > 20) {
+                            truncated = truncated.substring(0, 17) + "...";
                         }
                         
-                        int rowStartX = startX + (CARD_WIDTH - totalRowWidth) / 2;
-                        textX = rowStartX;
+                        int itemY = listY + (i * 32) - (int)galleryScrollOffset;
+                        if (itemY < startY + 130 || itemY > startY + 300) continue;
                         
-                        boolean isRowHovered = isHovering(mouseX, mouseY, startX + 20, listY, CARD_WIDTH - 40, 14);
+                        boolean isRowHovered = isHovering(mouseX, mouseY, startX + 20, itemY, CARD_WIDTH - 40, 28);
                         boolean isActive = sound.equals(MediaManager.activeKillSoundFile);
                         
+                        int boxColor = isActive ? 0x331DB954 : (isRowHovered ? 0x22FFFFFF : 0x11FFFFFF);
+                        drawRoundedRect(guiGraphics, startX + 20, itemY, CARD_WIDTH - 40, 28, boxColor);
+                        
+                        guiGraphics.fill(startX + 25, itemY + 4, startX + 45, itemY + 24, 0x44000000);
+                        guiGraphics.text(this.font, "🎵", startX + 31, itemY + 8, 0xFFAAAAAA, false);
+                        
+                        int textX = startX + 50;
+                        int sWidth = this.font.width(truncated);
+                        
+                        int spacing = 6;
+                        boolean isSliderOpen = (activeVolumeSliderIndex == i);
+                        int playIconWidth = 7, speakerIconWidth = 7, micIconWidth = 7, scissorsIconWidth = 9, binIconWidth = 9;
+                        int volumeSliderWidth = 40;
+                        
+                        int rightIconsStartX = startX + CARD_WIDTH - 25 - (binIconWidth + spacing + scissorsIconWidth + spacing + micIconWidth + spacing + speakerIconWidth + spacing + (isSliderOpen ? volumeSliderWidth : playIconWidth));
+                        
+                        int playX = 0, speakerX, micX, scissorsX, binX, sliderStartX = 0;
+                        
                         if (isSliderOpen) {
-                            int sliderStartX = rowStartX + sWidth + spacing;
-                            int sliderY = listY + 7;
+                            sliderStartX = rightIconsStartX;
                             speakerX = sliderStartX + volumeSliderWidth + spacing;
-                            micX = speakerX + speakerIconWidth + spacing;
-                            scissorsX = micX + micIconWidth + spacing;
-                            binX = scissorsX + scissorsIconWidth + spacing;
-                            
-                            boolean isSpeakerHovered = isHovering(mouseX, mouseY, speakerX - 2, listY, speakerIconWidth + 4, 14);
-                            boolean isMicHovered = isHovering(mouseX, mouseY, micX - 2, listY, micIconWidth + 4, 14);
-                            boolean isScissorsHovered = isHovering(mouseX, mouseY, scissorsX - 2, listY, scissorsIconWidth + 4, 14);
-                            boolean isBinHovered = isHovering(mouseX, mouseY, binX - 2, listY, binIconWidth + 4, 14);
+                        } else {
+                            playX = rightIconsStartX;
+                            speakerX = playX + playIconWidth + spacing;
+                        }
+                        micX = speakerX + speakerIconWidth + spacing;
+                        scissorsX = micX + micIconWidth + spacing;
+                        binX = scissorsX + scissorsIconWidth + spacing;
+                        
+                        if (isSliderOpen) {
+                            int sliderY = itemY + 13;
+                            boolean isSpeakerHovered = isHovering(mouseX, mouseY, speakerX - 2, itemY + 6, speakerIconWidth + 4, 16);
+                            boolean isMicHovered = isHovering(mouseX, mouseY, micX - 2, itemY + 6, micIconWidth + 4, 16);
+                            boolean isScissorsHovered = isHovering(mouseX, mouseY, scissorsX - 2, itemY + 6, scissorsIconWidth + 4, 16);
+                            boolean isBinHovered = isHovering(mouseX, mouseY, binX - 2, itemY + 6, binIconWidth + 4, 16);
                             
                             int speakerColor = isSpeakerHovered ? 0xFFFFFFFF : 0xFF1DB954;
-                            boolean isMicActive = sound.equals(currentMicFile) && VoicechatAudioQueue.isPlaying();
+                            boolean isMicActive = sound.equals(currentMicFile) && MediaControlScreen.isDirectMicActive;
                             int micColor = isMicActive ? 0xFF1DB954 : (isMicHovered ? 0xFFFFFFFF : 0xFF888888);
                             int scissorsColor = isScissorsHovered ? 0xFFFFFFFF : 0xFF888888;
                             int binColor = isBinHovered ? 0xFFFF5555 : 0xFF888888;
                             int textColor = isActive ? 0xFF1DB954 : (isRowHovered ? 0xFFFFFFFF : 0xFFCCCCCC);
                             
-                            guiGraphics.text(this.font, truncated, textX, listY + 3, textColor, false);
+                            guiGraphics.text(this.font, truncated, textX, itemY + 10, textColor, false);
                             
-                            // Draw slider track
                             guiGraphics.fill(sliderStartX, sliderY, sliderStartX + volumeSliderWidth, sliderY + 2, 0x33FFFFFF);
                             int filledWidth = (int) (volumeSliderWidth * LocalSoundPlayer.previewVolume);
                             guiGraphics.fill(sliderStartX, sliderY, sliderStartX + filledWidth, sliderY + 2, 0xFFFFFFFF);
                             int handleX = sliderStartX + filledWidth;
                             guiGraphics.fill(handleX - 1, sliderY - 2, handleX + 2, sliderY + 4, 0xFFFFFFFF);
                             
-                            drawSpeakerIcon(guiGraphics, speakerX, listY + 3, speakerColor);
-                            if (isMicActive) {
-                                drawMicIcon(guiGraphics, micX, listY + 3, micColor);
-                            } else {
-                                drawMicClosedIcon(guiGraphics, micX, listY + 3, micColor);
-                            }
-                            drawScissorsIcon(guiGraphics, scissorsX, listY + 3, scissorsColor);
-                            drawBinIcon(guiGraphics, binX, listY + 3, binColor);
-                            
-                            if (isRowHovered) {
-                                guiGraphics.fill(startX + 20, listY, startX + CARD_WIDTH - 20, listY + 14, 0x15FFFFFF);
-                                if (isMicHovered) {
-                                    guiGraphics.fill(micX - 3, listY + 1, micX + micIconWidth + 3, listY + 13, 0x22FFFFFF);
-                                }
-                                if (isScissorsHovered) {
-                                    guiGraphics.fill(scissorsX - 3, listY + 1, scissorsX + scissorsIconWidth + 3, listY + 13, 0x22FFFFFF);
-                                }
-                                if (isBinHovered) {
-                                    guiGraphics.fill(binX - 3, listY + 1, binX + binIconWidth + 3, listY + 13, 0x22FFFFFF);
-                                }
-                            }
+                            drawSpeakerIcon(guiGraphics, speakerX, itemY + 10, speakerColor);
+                            if (isMicActive) drawMicIcon(guiGraphics, micX, itemY + 10, micColor);
+                            else drawMicClosedIcon(guiGraphics, micX, itemY + 10, micColor);
+                            drawScissorsIcon(guiGraphics, scissorsX, itemY + 10, scissorsColor);
+                            drawBinIcon(guiGraphics, binX, itemY + 10, binColor);
                         } else {
-                            playX = rowStartX + sWidth + spacing;
-                            speakerX = playX + playIconWidth + spacing;
-                            micX = speakerX + speakerIconWidth + spacing;
-                            scissorsX = micX + micIconWidth + spacing;
-                            binX = scissorsX + scissorsIconWidth + spacing;
-                            
-                            boolean isPlayHovered = isHovering(mouseX, mouseY, playX - 2, listY, playIconWidth + 4, 14);
-                            boolean isSpeakerHovered = isHovering(mouseX, mouseY, speakerX - 2, listY, speakerIconWidth + 4, 14);
-                            boolean isMicHovered = isHovering(mouseX, mouseY, micX - 2, listY, micIconWidth + 4, 14);
-                            boolean isScissorsHovered = isHovering(mouseX, mouseY, scissorsX - 2, listY, scissorsIconWidth + 4, 14);
-                            boolean isBinHovered = isHovering(mouseX, mouseY, binX - 2, listY, binIconWidth + 4, 14);
+                            boolean isPlayHovered = isHovering(mouseX, mouseY, playX - 2, itemY + 6, playIconWidth + 4, 16);
+                            boolean isSpeakerHovered = isHovering(mouseX, mouseY, speakerX - 2, itemY + 6, speakerIconWidth + 4, 16);
+                            boolean isMicHovered = isHovering(mouseX, mouseY, micX - 2, itemY + 6, micIconWidth + 4, 16);
+                            boolean isScissorsHovered = isHovering(mouseX, mouseY, scissorsX - 2, itemY + 6, scissorsIconWidth + 4, 16);
+                            boolean isBinHovered = isHovering(mouseX, mouseY, binX - 2, itemY + 6, binIconWidth + 4, 16);
                             
                             int playColor = isPlayHovered ? 0xFFFFFFFF : 0xFF888888;
                             int speakerColor = isSpeakerHovered ? 0xFFFFFFFF : 0xFF888888;
-                            boolean isMicActive = sound.equals(currentMicFile) && VoicechatAudioQueue.isPlaying();
+                            boolean isMicActive = sound.equals(currentMicFile) && MediaControlScreen.isDirectMicActive;
                             int micColor = isMicActive ? 0xFF1DB954 : (isMicHovered ? 0xFFFFFFFF : 0xFF888888);
                             int scissorsColor = isScissorsHovered ? 0xFFFFFFFF : 0xFF888888;
                             int binColor = isBinHovered ? 0xFFFF5555 : 0xFF888888;
                             int textColor = isActive ? 0xFF1DB954 : ((isRowHovered && !isPlayHovered && !isSpeakerHovered && !isMicHovered && !isScissorsHovered && !isBinHovered) ? 0xFFFFFFFF : 0xFFCCCCCC);
                             
-                            guiGraphics.text(this.font, truncated, textX, listY + 3, textColor, false);
+                            guiGraphics.text(this.font, truncated, textX, itemY + 10, textColor, false);
                             
                             boolean isCurrentlyPlaying = sound.equals(LocalSoundPlayer.currentPlayingFile) && LocalSoundPlayer.isClipPlaying();
-                            if (isCurrentlyPlaying) {
-                                drawPauseIcon(guiGraphics, playX, listY + 3, playColor);
-                            } else {
-                                drawPlayIcon(guiGraphics, playX, listY + 3, playColor);
-                            }
+                            if (isCurrentlyPlaying) drawPauseIcon(guiGraphics, playX, itemY + 10, playColor);
+                            else drawPlayIcon(guiGraphics, playX, itemY + 10, playColor);
                             
-                            drawSpeakerIcon(guiGraphics, speakerX, listY + 3, speakerColor);
-                            if (isMicActive) {
-                                drawMicIcon(guiGraphics, micX, listY + 3, micColor);
-                            } else {
-                                drawMicClosedIcon(guiGraphics, micX, listY + 3, micColor);
-                            }
-                            drawScissorsIcon(guiGraphics, scissorsX, listY + 3, scissorsColor);
-                            drawBinIcon(guiGraphics, binX, listY + 3, binColor);
-                            
-                            if (isRowHovered) {
-                                guiGraphics.fill(startX + 20, listY, startX + CARD_WIDTH - 20, listY + 14, 0x15FFFFFF);
-                                if (isPlayHovered) {
-                                    guiGraphics.fill(playX - 3, listY + 1, playX + playIconWidth + 3, listY + 13, 0x22FFFFFF);
-                                }
-                                if (isSpeakerHovered) {
-                                    guiGraphics.fill(speakerX - 3, listY + 1, speakerX + speakerIconWidth + 3, listY + 13, 0x22FFFFFF);
-                                }
-                                if (isMicHovered) {
-                                    guiGraphics.fill(micX - 3, listY + 1, micX + micIconWidth + 3, listY + 13, 0x22FFFFFF);
-                                }
-                                if (isScissorsHovered) {
-                                    guiGraphics.fill(scissorsX - 3, listY + 1, scissorsX + scissorsIconWidth + 3, listY + 13, 0x22FFFFFF);
-                                }
-                                if (isBinHovered) {
-                                    guiGraphics.fill(binX - 3, listY + 1, binX + binIconWidth + 3, listY + 13, 0x22FFFFFF);
-                                }
-                            }
+                            drawSpeakerIcon(guiGraphics, speakerX, itemY + 10, speakerColor);
+                            if (isMicActive) drawMicIcon(guiGraphics, micX, itemY + 10, micColor);
+                            else drawMicClosedIcon(guiGraphics, micX, itemY + 10, micColor);
+                            drawScissorsIcon(guiGraphics, scissorsX, itemY + 10, scissorsColor);
+                            drawBinIcon(guiGraphics, binX, itemY + 10, binColor);
                         }
-                        listY += 16;
                     }
+                    guiGraphics.disableScissor();
                 }
 
                 if (showFfmpegWarning) {
@@ -317,9 +296,16 @@ public class MediaControlScreen extends Screen {
                 this.linkField.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
             }
             
-            // Draw Hamburger Icon in top right
+            // Draw Hamburger Icon in bottom right
             int menuColor = isMenuHovered ? 0xFFFFFFFF : 0xFF888888;
             drawHamburgerIcon(guiGraphics, menuX, menuY, menuColor);
+
+            // Draw Settings (Gear) Icon in bottom right corner
+            int gearX = startX + 255;
+            int gearY = startY + 106;
+            boolean isGearHovered = isHovering(mouseX, mouseY, gearX - 3, gearY - 3, 16, 16);
+            int gearColor = isGearHovered ? 0xFFFFFFFF : 0xFF888888;
+            drawGearIcon(guiGraphics, gearX, gearY, gearColor);
 
             // Draw Top Source Header (e.g. Spotify)
             String sourceName = "Select App";
@@ -340,14 +326,32 @@ public class MediaControlScreen extends Screen {
             boolean isHeaderHovered = isHovering(mouseX, mouseY, startX + 15, startY + 8, headerTextWidth, 16);
             guiGraphics.text(this.font, headerText, startX + 15, startY + 12, isHeaderHovered ? 0xFFFFFFFF : 0xFFAAAAAA, false);
 
+            // Speaker Button
+            int speakerX = startX + 15 + headerTextWidth + 10;
+            int speakerY = startY + 13;
+            boolean speakerHovered = isHovering(mouseX, mouseY, speakerX - 4, speakerY - 2, 14, 14);
+            int speakerColor = isMainVolumeSliderOpen ? 0xFF1DB954 : (speakerHovered ? 0xFFFFFFFF : 0xFF888888);
+            drawSpeakerIcon(guiGraphics, speakerX, speakerY, speakerColor);
+
+            if (isMainVolumeSliderOpen) {
+                int volumeSliderWidth = 30;
+                int sliderStartX = speakerX + 15;
+                int sY = speakerY + 4;
+                guiGraphics.fill(sliderStartX, sY, sliderStartX + volumeSliderWidth, sY + 2, 0x33FFFFFF);
+                int volFilledWidth = (int) (volumeSliderWidth * LocalSoundPlayer.previewVolume);
+                guiGraphics.fill(sliderStartX, sY, sliderStartX + volFilledWidth, sY + 2, 0xFFFFFFFF);
+                int handleX = sliderStartX + volFilledWidth;
+                guiGraphics.fill(handleX - 1, sY - 2, handleX + 2, sY + 4, 0xFFFFFFFF);
+            }
+
             if (!MediaManager.hasSession) {
                 guiGraphics.text(this.font, "No media playing", startX + CARD_WIDTH / 2 - this.font.width("No media playing") / 2, startY + CARD_HEIGHT / 2 - 10, 0xFFFFFFFF, false);
                 guiGraphics.text(this.font, "Click top-left to select application", startX + CARD_WIDTH / 2 - this.font.width("Click top-left to select application") / 2, startY + CARD_HEIGHT / 2 + 5, 0xFFAAAAAA, false);
             } else {
                 // --- Draw actual Album Art on the right ---
-                int rightArtSize = 60;
+                int rightArtSize = 68;
                 int rightArtX = startX + CARD_WIDTH - rightArtSize - 15;
-                int rightArtY = startY + 15;
+                int rightArtY = startY + 10;
                 if (artId != null && MediaManager.artworkWidth > 0 && MediaManager.artworkHeight > 0) {
                     guiGraphics.blit(RenderPipelines.GUI_TEXTURED, artId, rightArtX, rightArtY, 0.0f, 0.0f, rightArtSize, rightArtSize, MediaManager.artworkWidth, MediaManager.artworkHeight, MediaManager.artworkWidth, MediaManager.artworkHeight);
                 } else {
@@ -397,8 +401,35 @@ public class MediaControlScreen extends Screen {
                 // 6. Draw Control Buttons (Interactive)
                 int btnY = startY + 105;
                 
+                // Direct Mic / Sync Mic / Download Button
+                int directMicX = startX + 15;
+                int micX = startX + 45;
+                boolean directMicHovered = isHovering(mouseX, mouseY, directMicX - 4, btnY - 2, 14, 14);
+                boolean micHovered = isHovering(mouseX, mouseY, micX - 4, btnY - 2, 14, 14);
+                
+                String matched = getMatchedFile();
+                boolean isDownloading = SpotDLDownloader.isDownloading;
+                
+                if (matched != null) {
+                    // Megaphone
+                    int directMicColor = isDirectMicActive ? 0xFF1DB954 : (directMicHovered ? 0xFFFFFFFF : 0xFF888888);
+                    drawMegaphoneIcon(guiGraphics, directMicX, btnY, directMicColor);
+
+                    // Sync Mic
+                    int mainMicColor = isMicActive ? 0xFF1DB954 : (micHovered ? 0xFFFFFFFF : 0xFF888888);
+                    if (isMicActive) {
+                        drawMicIcon(guiGraphics, micX, btnY, mainMicColor);
+                    } else {
+                        drawMicClosedIcon(guiGraphics, micX, btnY, mainMicColor);
+                    }
+                } else if (isDownloading) {
+                    drawLoadingIcon(guiGraphics, micX, btnY, micHovered ? 0xFFFFFFFF : 0xFF888888);
+                } else {
+                    drawDownloadIcon(guiGraphics, micX, btnY, micHovered ? 0xFFFFFFFF : 0xFF888888);
+                }
+
                 // Heart Button (Favorite)
-                int heartX = startX + 70;
+                int heartX = startX + 75;
                 boolean heartHovered = isHovering(mouseX, mouseY, heartX - 4, btnY - 2, 14, 14);
                 int heartColor = isFavorited ? 0xFFFF2D55 : (heartHovered ? 0xFFFFFFFF : 0xFF888888);
                 drawHeartIcon(guiGraphics, heartX, btnY, heartColor, isFavorited);
@@ -422,11 +453,11 @@ public class MediaControlScreen extends Screen {
                 boolean nextHovered = isHovering(mouseX, mouseY, nextX - 2, btnY - 2, 14, 14);
                 drawNextIcon(guiGraphics, nextX, btnY, nextHovered ? 0xFFFFFFFF : 0xFF888888);
                 
-                // Shuffle Button
-                int shuffleX = startX + 195;
-                boolean shuffleHovered = isHovering(mouseX, mouseY, shuffleX - 4, btnY - 2, 16, 14);
-                int shuffleColor = isShuffleEnabled ? 0xFF2196F3 : (shuffleHovered ? 0xFFFFFFFF : 0xFF888888);
-                drawShuffleIcon(guiGraphics, shuffleX, btnY, shuffleColor);
+                // Repeat Button
+                int repeatX = startX + 195;
+                boolean repeatHovered = isHovering(mouseX, mouseY, repeatX - 4, btnY - 2, 16, 14);
+                int repeatColor = isRepeatEnabled ? 0xFF1DB954 : (repeatHovered ? 0xFFFFFFFF : 0xFF888888);
+                drawRepeatIcon(guiGraphics, repeatX, btnY, repeatColor);
             }
 
             // Draw Dropdown Overlay if open
@@ -525,14 +556,20 @@ public class MediaControlScreen extends Screen {
         }
     }
 
-    private void drawShuffleIcon(GuiGraphicsExtractor g, int x, int y, int color) {
-        g.fill(x, y + 2, x + 8, y + 3, color);
-        g.fill(x + 6, y + 1, x + 7, y + 2, color);
-        g.fill(x + 6, y + 3, x + 7, y + 4, color);
+    private void drawRepeatIcon(GuiGraphicsExtractor g, int x, int y, int color) {
+        // Top arrow curving right
+        g.fill(x + 2, y + 1, x + 8, y + 2, color);
+        g.fill(x + 1, y + 2, x + 2, y + 4, color);
+        g.fill(x + 8, y + 2, x + 9, y + 4, color);
+        g.fill(x + 6, y, x + 8, y + 1, color);
+        g.fill(x + 6, y + 2, x + 8, y + 3, color);
         
-        g.fill(x + 2, y + 5, x + 10, y + 6, color);
-        g.fill(x + 3, y + 4, x + 4, y + 5, color);
-        g.fill(x + 3, y + 6, x + 4, y + 7, color);
+        // Bottom arrow curving left
+        g.fill(x + 2, y + 6, x + 8, y + 7, color);
+        g.fill(x + 1, y + 4, x + 2, y + 6, color);
+        g.fill(x + 8, y + 4, x + 9, y + 6, color);
+        g.fill(x + 2, y + 5, x + 4, y + 6, color);
+        g.fill(x + 2, y + 7, x + 4, y + 8, color);
     }
 
     private void drawBinIcon(GuiGraphicsExtractor g, int x, int y, int color) {
@@ -558,9 +595,9 @@ public class MediaControlScreen extends Screen {
         double mouseX = event.x();
         double mouseY = event.y();
         
-        // Calculate menu (top right hamburger / close button) bounds
-        int menuX = startX + CARD_WIDTH - 25;
-        int menuY = startY + 12;
+        // Menu Button Click (Bottom Right)
+        int menuX = startX + 225;
+        int menuY = startY + 106;
         boolean clickedMenu = mouseX >= menuX - 3 && mouseX <= menuX + 13 && mouseY >= menuY - 3 && mouseY <= menuY + 13;
 
         if (clickedMenu) {
@@ -568,6 +605,18 @@ public class MediaControlScreen extends Screen {
                     net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
             isSetupOpen = !isSetupOpen;
             updateWidgetVisibilities();
+            return true;
+        }
+
+        // Settings Button Click (Bottom Right)
+        int gearX = startX + 255;
+        int gearY = startY + 106;
+        boolean clickedGear = mouseX >= gearX - 3 && mouseX <= gearX + 13 && mouseY >= gearY - 3 && mouseY <= gearY + 13;
+        
+        if (clickedGear) {
+            this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                    net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            this.minecraft.setScreen(new AudioStrikeSettingsScreen(this));
             return true;
         }
 
@@ -598,137 +647,115 @@ public class MediaControlScreen extends Screen {
             // Gallery click handler
             java.util.List<String> sounds = LocalSoundPlayer.getAvailableSounds();
             int listY = startY + 160;
-            for (int i = 0; i < Math.min(sounds.size(), 3); i++) {
+            for (int i = 0; i < sounds.size(); i++) {
                 String sound = sounds.get(i);
-                String truncated = truncateString(sound, CARD_WIDTH - 80);
+                int itemY = listY + (i * 32) - (int)galleryScrollOffset;
+                if (itemY < startY + 130 || itemY > startY + 300) continue;
+                
+                String truncated = sound;
+                if (truncated.length() > 20) {
+                    truncated = truncated.substring(0, 17) + "...";
+                }
                 int sWidth = this.font.width(truncated);
                 int spacing = 6;
                 
                 boolean isSliderOpen = (activeVolumeSliderIndex == i);
-                int playIconWidth = 7;
-                int speakerIconWidth = 7;
-                int micIconWidth = 7;
-                int scissorsIconWidth = 9;
-                int binIconWidth = 9;
+                int playIconWidth = 7, speakerIconWidth = 7, micIconWidth = 7, scissorsIconWidth = 9, binIconWidth = 9;
                 int volumeSliderWidth = 40;
                 
-                int playX, speakerX, micX, scissorsX, binX, sliderStartX = 0;
-                if (isSliderOpen) {
-                    sliderStartX = startX + (CARD_WIDTH - (sWidth + spacing + volumeSliderWidth + spacing + speakerIconWidth + spacing + micIconWidth + spacing + scissorsIconWidth + spacing + binIconWidth)) / 2 + sWidth + spacing;
-                    speakerX = sliderStartX + volumeSliderWidth + spacing;
-                    micX = speakerX + speakerIconWidth + spacing;
-                    scissorsX = micX + micIconWidth + spacing;
-                    binX = scissorsX + scissorsIconWidth + spacing;
-                } else {
-                    playX = startX + (CARD_WIDTH - (sWidth + spacing + playIconWidth + spacing + speakerIconWidth + spacing + micIconWidth + spacing + scissorsIconWidth + spacing + binIconWidth)) / 2 + sWidth + spacing;
-                    speakerX = playX + playIconWidth + spacing;
-                    micX = speakerX + speakerIconWidth + spacing;
-                    scissorsX = micX + micIconWidth + spacing;
-                    binX = scissorsX + scissorsIconWidth + spacing;
-                }
+                int playX = 0, speakerX, micX, scissorsX, binX, sliderStartX = 0;
+                int rightIconsStartX = startX + CARD_WIDTH - 25 - (binIconWidth + spacing + scissorsIconWidth + spacing + micIconWidth + spacing + speakerIconWidth + spacing + (isSliderOpen ? volumeSliderWidth : playIconWidth));
                 
-                if (mouseY >= listY && mouseY <= listY + 14) {
+                if (isSliderOpen) {
+                    sliderStartX = rightIconsStartX;
+                    speakerX = sliderStartX + volumeSliderWidth + spacing;
+                } else {
+                    playX = rightIconsStartX;
+                    speakerX = playX + playIconWidth + spacing;
+                }
+                micX = speakerX + speakerIconWidth + spacing;
+                scissorsX = micX + micIconWidth + spacing;
+                binX = scissorsX + scissorsIconWidth + spacing;
+                
+                if (mouseY >= itemY && mouseY <= itemY + 28) {
                     if (isSliderOpen) {
-                        // Speaker is open: check if clicked speaker icon to close it
                         if (mouseX >= speakerX - 3 && mouseX <= speakerX + speakerIconWidth + 3) {
                             activeVolumeSliderIndex = -1;
                             isDraggingVolumeSlider = false;
-                            this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                                    net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                            this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
                             return true;
                         }
-                        // Check if clicked inside slider
                         if (mouseX >= sliderStartX && mouseX <= sliderStartX + volumeSliderWidth) {
                             isDraggingVolumeSlider = true;
                             float vol = (float) (mouseX - sliderStartX) / volumeSliderWidth;
                             LocalSoundPlayer.setVolume(vol);
-                            this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                                    net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                            this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
                             return true;
                         }
-                        // Clicked outside slider/speaker: close it!
                         activeVolumeSliderIndex = -1;
                         isDraggingVolumeSlider = false;
                     } else {
-                        // Slider is closed: check play icon
-                        playX = startX + (CARD_WIDTH - (sWidth + spacing + playIconWidth + spacing + speakerIconWidth + spacing + micIconWidth + spacing + scissorsIconWidth + spacing + binIconWidth)) / 2 + sWidth + spacing;
                         if (mouseX >= playX - 3 && mouseX <= playX + playIconWidth + 3) {
-                            if (sound.equals(LocalSoundPlayer.currentPlayingFile) && LocalSoundPlayer.isClipPlaying()) {
-                                LocalSoundPlayer.pauseSound();
-                            } else {
-                                LocalSoundPlayer.playKillSound(sound, true);
-                            }
-                            this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                                    net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                            if (sound.equals(LocalSoundPlayer.currentPlayingFile) && LocalSoundPlayer.isClipPlaying()) LocalSoundPlayer.pauseSound();
+                            else LocalSoundPlayer.playKillSound(sound, true);
+                            this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
                             return true;
                         }
-                        // Check speaker icon
                         if (mouseX >= speakerX - 3 && mouseX <= speakerX + speakerIconWidth + 3) {
                             activeVolumeSliderIndex = i;
-                            this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                                    net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                            this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
                             return true;
                         }
                     }
                     
-                    // Check mic toggle icon (available in both slider-open and slider-closed states)
                     if (mouseX >= micX - 3 && mouseX <= micX + micIconWidth + 3) {
-                        if (sound.equals(currentMicFile) && VoicechatAudioQueue.isPlaying()) {
-                            // Currently transmitting this sound — stop it
+                        if (sound.equals(currentMicFile) && isMicActive) {
                             VoicechatAudioQueue.stop();
                             currentMicFile = "";
-                            if (this.minecraft.player != null) {
-                                this.minecraft.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7d[SpotifyMod] \u00a7cStopped mic transmission."));
-                            }
+                            isMicActive = false;
+                            if (this.minecraft.player != null) this.minecraft.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7d[SpotifyMod] \u00a7cStopped mic transmission."));
                         } else {
-                            // Start transmitting this sound
                             VoicechatAudioQueue.stop();
                             currentMicFile = sound;
+                            isMicActive = true;
                             VoicechatAudioQueue.playSound(sound);
-                            if (this.minecraft.player != null) {
-                                this.minecraft.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7d[SpotifyMod] \u00a7ePlaying '" + sound + "' over microphone..."));
-                            }
+                            if (this.minecraft.player != null) this.minecraft.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7d[SpotifyMod] \u00a7ePlaying '" + sound + "' over microphone..."));
                         }
-                        this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                                net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                        this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
                         return true;
                     }
                     
-                    // Check Scissors click
                     if (mouseX >= scissorsX - 3 && mouseX <= scissorsX + scissorsIconWidth + 3) {
-                        this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                                net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                        this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
                         this.minecraft.setScreen(new AudioCropScreen(this, sound));
                         return true;
                     }
                     
-                    // Check Bin click
                     if (mouseX >= binX - 3 && mouseX <= binX + binIconWidth + 3) {
-                        this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                                net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
-                        File runDir = new File(System.getProperty("user.dir"));
-                        File soundFile = new File(new File(runDir, "killsounds"), sound);
+                        this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                        File soundFile = new File(new File(new File(System.getProperty("user.dir")), "killsounds"), sound);
                         if (soundFile.exists()) {
                             soundFile.delete();
-                            if (sound.equals(MediaManager.activeKillSoundFile)) {
-                                MediaManager.activeKillSoundFile = "";
-                            }
-                            if (sound.equals(LocalSoundPlayer.currentPlayingFile)) {
-                                LocalSoundPlayer.stopSound();
-                            }
+                            if (sound.equals(MediaManager.activeKillSoundFile)) MediaManager.activeKillSoundFile = "";
+                            if (sound.equals(LocalSoundPlayer.currentPlayingFile)) LocalSoundPlayer.stopSound();
                         }
                         return true;
                     }
                     
-                    // Otherwise select active sound
                     if (mouseX >= startX + 20 && mouseX <= startX + CARD_WIDTH - 20) {
+                        long currentTime = System.currentTimeMillis();
+                        if (currentTime - lastGalleryClickTime < 300 && sound.equals(lastGalleryClickedSound)) {
+                            this.minecraft.setScreen(new ActionSoundScreen(this, sound));
+                            return true;
+                        }
+                        lastGalleryClickTime = currentTime;
+                        lastGalleryClickedSound = sound;
+                        
                         MediaManager.activeKillSoundFile = sound;
-                        this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                                net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                        this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
                         return true;
                     }
                 }
-                listY += 16;
             }
 
             // Download button handler
@@ -742,10 +769,20 @@ public class MediaControlScreen extends Screen {
                     return true;
                 }
                 String link = linkField.getValue().trim();
+                boolean isSearchQuery = false;
                 if (link.isEmpty() && !MediaManager.title.isEmpty() && !MediaManager.artist.isEmpty()) {
                     link = MediaManager.artist + " " + MediaManager.title;
+                    isSearchQuery = true;
                 }
                 if (!link.isEmpty()) {
+                    if (!isSearchQuery && !link.contains("spotify.com")) {
+                        this.linkField.setTextColor(0xFFFF5555); // Red text
+                        if (this.minecraft.player != null) {
+                            this.minecraft.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7c[SpotifyMod] Please use a valid Spotify link!"));
+                        }
+                        return true;
+                    }
+                    this.linkField.setTextColor(0xFFE0E0E0);
                     SpotDLDownloader.downloadLink(link);
                     isSetupOpen = false;
                     updateWidgetVisibilities();
@@ -842,9 +879,71 @@ public class MediaControlScreen extends Screen {
 
         int btnY = startY + 105;
 
+        // Direct Mic (Megaphone) Button
+        int directMicX = startX + 15;
+        if (mouseX >= directMicX - 4 && mouseX <= directMicX + 14 && mouseY >= btnY - 2 && mouseY <= btnY + 12) {
+            String matched = getMatchedFile();
+            if (matched != null) {
+                isDirectMicActive = !isDirectMicActive;
+                if (isDirectMicActive) {
+                    isMicActive = false; // turn off sync mic
+                    currentMicFile = matched;
+                    VoicechatAudioQueue.stop();
+                    VoicechatAudioQueue.playSound(matched);
+                    if (this.minecraft.player != null) {
+                        this.minecraft.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7d[SpotifyMod] \u00a7eStreaming '" + matched + "' over microphone (soundboard mode)..."));
+                    }
+                } else {
+                    currentMicFile = "";
+                    VoicechatAudioQueue.stop();
+                    if (this.minecraft.player != null) {
+                        this.minecraft.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7d[SpotifyMod] \u00a7cStopped mic transmission."));
+                    }
+                }
+            }
+            this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            return true;
+        }
+
+        // Sync Mic Button
+        int micX = startX + 45;
+        if (mouseX >= micX - 4 && mouseX <= micX + 14 && mouseY >= btnY - 2 && mouseY <= btnY + 12) {
+            String matched = getMatchedFile();
+            if (matched != null) {
+                isMicActive = !isMicActive;
+                if (isMicActive) {
+                    isDirectMicActive = false; // turn off direct mic
+                    currentMicFile = matched;
+                    VoicechatAudioQueue.stop();
+                    VoicechatAudioQueue.playSound(matched);
+                    if (this.minecraft.player != null) {
+                        this.minecraft.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7d[SpotifyMod] \u00a7eStreaming '" + matched + "' over microphone (sync mode)..."));
+                    }
+                } else {
+                    currentMicFile = "";
+                    VoicechatAudioQueue.stop();
+                    if (this.minecraft.player != null) {
+                        this.minecraft.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7d[SpotifyMod] \u00a7cStopped mic transmission."));
+                    }
+                }
+            } else {
+                if (this.minecraft.player != null) {
+                    String query = MediaManager.artist + " " + MediaManager.title;
+                    if (!query.trim().isEmpty()) {
+                        this.minecraft.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7d[SpotifyMod] \u00a7eDownloading '" + query + "' from Spotify..."));
+                        SpotDLDownloader.downloadLink(query);
+                    } else {
+                        this.minecraft.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7c[SpotifyMod] No song to download!"));
+                    }
+                }
+            }
+            this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            return true;
+        }
+
         // Heart Button
-        if (isHovering(mouseX, mouseY, startX + 70 - 4, btnY - 2, 14, 14)) {
-            isFavorited = !isFavorited;
+        if (isHovering(mouseX, mouseY, startX + 75 - 4, btnY - 2, 14, 14)) {
+            MediaManager.toggleLike();
             this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
                     net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
             return true;
@@ -874,12 +973,43 @@ public class MediaControlScreen extends Screen {
             return true;
         }
 
-        // Shuffle Button
+        // Repeat Button
         if (isHovering(mouseX, mouseY, startX + 195 - 4, btnY - 2, 16, 14)) {
-            isShuffleEnabled = !isShuffleEnabled;
+            isRepeatEnabled = !isRepeatEnabled;
+            MediaManager.sendCommand("repeat");
             this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
                     net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
             return true;
+        }
+
+        // Speaker Button
+        int speakerX = startX + 15 + headerTextWidth + 10;
+        int speakerY = startY + 13;
+
+        if (isMainVolumeSliderOpen) {
+            int volumeSliderWidth = 30;
+            int sliderStartX = speakerX + 15;
+            if (mouseX >= speakerX - 4 && mouseX <= speakerX + 14 && mouseY >= speakerY - 2 && mouseY <= speakerY + 12) {
+                isMainVolumeSliderOpen = false;
+                this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                return true;
+            }
+            if (mouseX >= sliderStartX && mouseX <= sliderStartX + volumeSliderWidth && mouseY >= speakerY - 2 && mouseY <= speakerY + 10) {
+                isDraggingMainVolumeSlider = true;
+                float vol = (float) (mouseX - sliderStartX) / volumeSliderWidth;
+                vol = Math.max(0.0f, Math.min(1.0f, vol));
+                LocalSoundPlayer.setVolume(vol);
+                MediaManager.sendCommand("volume " + vol);
+                this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                return true;
+            }
+            isMainVolumeSliderOpen = false;
+        } else {
+            if (mouseX >= speakerX - 4 && mouseX <= speakerX + 14 && mouseY >= speakerY - 2 && mouseY <= speakerY + 12) {
+                isMainVolumeSliderOpen = true;
+                this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                return true;
+            }
         }
 
         return super.mouseClicked(event, doubleClick);
@@ -891,12 +1021,19 @@ public class MediaControlScreen extends Screen {
             this.isDraggingSlider = false;
             if (dragPosition >= 0) {
                 MediaManager.sendCommand("seek " + (int) dragPosition);
+                if ((isMicActive || isDirectMicActive) && !currentMicFile.isEmpty()) {
+                    VoicechatAudioQueue.playSound(currentMicFile, dragPosition);
+                }
                 dragPosition = -1;
             }
             return true;
         }
         if (this.isDraggingVolumeSlider) {
             this.isDraggingVolumeSlider = false;
+            return true;
+        }
+        if (this.isDraggingMainVolumeSlider) {
+            this.isDraggingMainVolumeSlider = false;
             return true;
         }
         return super.mouseReleased(event);
@@ -913,17 +1050,51 @@ public class MediaControlScreen extends Screen {
             java.util.List<String> sounds = LocalSoundPlayer.getAvailableSounds();
             if (activeVolumeSliderIndex < sounds.size()) {
                 String sound = sounds.get(activeVolumeSliderIndex);
-                String truncated = truncateString(sound, CARD_WIDTH - 80);
+                String truncated = sound;
+                if (truncated.length() > 20) {
+                    truncated = truncated.substring(0, 17) + "...";
+                }
                 int sWidth = this.font.width(truncated);
                 int spacing = 6;
-                int volumeSliderWidth = 40;
+                int volumeSliderWidth = 30;
                 int speakerIconWidth = 7;
-                int sliderStartX = startX + (CARD_WIDTH - (sWidth + spacing + volumeSliderWidth + spacing + speakerIconWidth)) / 2 + sWidth + spacing;
+                int scissorsIconWidth = 9;
+                int binIconWidth = 9;
+                int micIconWidth = 7;
+                
+                int rightIconsStartX = startX + CARD_WIDTH - 25 - (binIconWidth + spacing + scissorsIconWidth + spacing + micIconWidth + spacing + speakerIconWidth + spacing + volumeSliderWidth);
+                int sliderStartX = rightIconsStartX;
                 
                 float vol = (float) (mouseX - sliderStartX) / volumeSliderWidth;
+                vol = Math.max(0.0f, Math.min(1.0f, vol));
                 LocalSoundPlayer.setVolume(vol);
                 return true;
             }
+        }
+        if (this.isDraggingMainVolumeSlider) {
+            String sourceName = "Select App";
+            if (MediaManager.hasSession) {
+                sourceName = MediaManager.source;
+                if (sourceName.toLowerCase().endsWith(".exe")) {
+                    sourceName = sourceName.substring(0, sourceName.length() - 4);
+                }
+                if (!sourceName.isEmpty()) {
+                    sourceName = sourceName.substring(0, 1).toUpperCase() + sourceName.substring(1);
+                } else {
+                    sourceName = "System";
+                }
+            }
+            String headerText = "🎵 " + sourceName + "  ▼";
+            int headerTextWidth = this.font.width(headerText);
+            int speakerX = startX + 15 + headerTextWidth + 10;
+            
+            int volumeSliderWidth = 30;
+            int sliderStartX = speakerX + 15;
+            float vol = (float) (mouseX - sliderStartX) / volumeSliderWidth;
+            vol = Math.max(0.0f, Math.min(1.0f, vol));
+            LocalSoundPlayer.setVolume(vol);
+            MediaManager.sendCommand("volume " + vol);
+            return true;
         }
         return super.mouseDragged(event, dragX, dragY);
     }
@@ -1003,6 +1174,14 @@ public class MediaControlScreen extends Screen {
                     link = MediaManager.artist + " " + MediaManager.title;
                 }
                 if (!link.isEmpty()) {
+                    if (!link.contains("spotify.com")) {
+                        this.linkField.setTextColor(0xFFFF5555);
+                        if (this.minecraft.player != null) {
+                            this.minecraft.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7c[SpotifyMod] Please use a valid Spotify link!"));
+                        }
+                        return true;
+                    }
+                    this.linkField.setTextColor(0xFFE0E0E0);
                     SpotDLDownloader.downloadLink(link);
                     isSetupOpen = false;
                     updateWidgetVisibilities();
@@ -1043,6 +1222,13 @@ public class MediaControlScreen extends Screen {
         g.fill(x, y, x + 10, y + 1, color);
         g.fill(x, y + 3, x + 10, y + 4, color);
         g.fill(x, y + 6, x + 10, y + 7, color);
+    }
+
+    private void drawGearIcon(GuiGraphicsExtractor g, int x, int y, int color) {
+        g.fill(x + 2, y, x + 6, y + 8, color);
+        g.fill(x, y + 2, x + 8, y + 6, color);
+        g.fill(x + 1, y + 1, x + 7, y + 7, color);
+        g.fill(x + 3, y + 3, x + 5, y + 5, 0xFF121212); // inner hole
     }
 
     private void drawCloseIcon(GuiGraphicsExtractor g, int x, int y, int color) {
@@ -1095,5 +1281,56 @@ public class MediaControlScreen extends Screen {
         g.fill(x + 4, y + 3, x + 5, y + 4, red);
         g.fill(x + 5, y + 2, x + 6, y + 3, red);
         g.fill(x + 6, y + 1, x + 7, y + 2, red);
+    }
+
+    private void drawDownloadIcon(GuiGraphicsExtractor g, int x, int y, int color) {
+        g.fill(x + 3, y, x + 4, y + 5, color);
+        g.fill(x + 2, y + 4, x + 3, y + 5, color);
+        g.fill(x + 4, y + 4, x + 5, y + 5, color);
+        g.fill(x + 1, y + 3, x + 2, y + 4, color);
+        g.fill(x + 5, y + 3, x + 6, y + 4, color);
+        g.fill(x + 3, y + 5, x + 4, y + 6, color);
+        g.fill(x + 1, y + 7, x + 6, y + 8, color);
+    }
+
+    private void drawLoadingIcon(GuiGraphicsExtractor g, int x, int y, int color) {
+        long time = System.currentTimeMillis() / 200;
+        int frame = (int)(time % 4);
+        if (frame == 0) {
+            g.fill(x + 3, y, x + 4, y + 3, color);
+        } else if (frame == 1) {
+            g.fill(x + 4, y + 3, x + 7, y + 4, color);
+        } else if (frame == 2) {
+            g.fill(x + 3, y + 4, x + 4, y + 7, color);
+        } else if (frame == 3) {
+            g.fill(x, y + 3, x + 3, y + 4, color);
+        }
+    }
+
+    public static String getMatchedFile() {
+        if (MediaManager.title == null || MediaManager.title.isEmpty()) return null;
+        if (MediaManager.isStoredSongsActive) return MediaManager.title;
+        String targetTitle = MediaManager.title.toLowerCase().replaceAll("[^a-z0-9]", "");
+        for (String s : LocalSoundPlayer.getAvailableSounds()) {
+            String sClean = s.toLowerCase().replace(".wav", "").replaceAll("[^a-z0-9]", "");
+            if (sClean.contains(targetTitle) || targetTitle.contains(sClean)) {
+                return s;
+            }
+        }
+        return null;
+    }
+
+    private void drawMegaphoneIcon(GuiGraphicsExtractor g, int x, int y, int color) {
+        // Megaphone back nozzle
+        g.fill(x, y + 2, x + 2, y + 6, color);
+        // Middle cone
+        g.fill(x + 2, y + 1, x + 4, y + 7, color);
+        // Bell mouth
+        g.fill(x + 4, y, x + 6, y + 8, color);
+        // Handle (flush with bottom baseline)
+        g.fill(x + 2, y + 7, x + 3, y + 8, color);
+        // Sound waves (matching speaker style)
+        g.fill(x + 8, y + 2, x + 9, y + 6, color);
+        g.fill(x + 10, y + 1, x + 11, y + 7, color);
     }
 }

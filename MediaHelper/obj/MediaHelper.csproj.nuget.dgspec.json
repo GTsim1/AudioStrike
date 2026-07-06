@@ -38,6 +38,10 @@
         "net6.0-windows10.0.19041": {
           "targetAlias": "net6.0-windows10.0.19041.0",
           "dependencies": {
+            "NAudio": {
+              "target": "Package",
+              "version": "[2.3.0, )"
+            },
             "System.Drawing.Common": {
               "target": "Package",
               "version": "[6.0.0, )"
@@ -84,7 +88,7 @@
         }
       },
       "runtimes": {
-        "win-x64": {
+        "win10-x64": {
           "#import": []
         }
       }

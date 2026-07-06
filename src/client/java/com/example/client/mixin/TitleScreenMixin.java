@@ -218,10 +218,10 @@ public class TitleScreenMixin extends Screen {
             boolean nextHovered = isHovering(mouseX, mouseY, nextX - 2, btnY - 2, 14, 14);
             drawNextIcon(guiGraphics, nextX, btnY, nextHovered ? 0xFFFFFFFF : 0xFF888888);
             
-            int shuffleX = startX + 195;
-            boolean shuffleHovered = isHovering(mouseX, mouseY, shuffleX - 4, btnY - 2, 16, 14);
-            int shuffleColor = MediaControlScreen.isShuffleEnabled ? 0xFF2196F3 : (shuffleHovered ? 0xFFFFFFFF : 0xFF888888);
-            drawShuffleIcon(guiGraphics, shuffleX, btnY, shuffleColor);
+            int repeatX = startX + 195;
+            boolean repeatHovered = isHovering(mouseX, mouseY, repeatX - 4, btnY - 2, 16, 14);
+            int repeatColor = MediaControlScreen.isRepeatEnabled ? 0xFF1DB954 : (repeatHovered ? 0xFFFFFFFF : 0xFF888888);
+            drawRepeatIcon(guiGraphics, repeatX, btnY, repeatColor);
         }
 
         if (isDropdownOpen) {
@@ -416,7 +416,7 @@ public class TitleScreenMixin extends Screen {
         int btnY = startY + 105;
 
         if (isHovering(mouseX, mouseY, startX + 70 - 4, btnY - 2, 14, 14)) {
-            MediaControlScreen.isFavorited = !MediaControlScreen.isFavorited;
+            MediaManager.toggleLike();
             this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
                     net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
             cir.setReturnValue(true);
@@ -448,7 +448,8 @@ public class TitleScreenMixin extends Screen {
         }
 
         if (isHovering(mouseX, mouseY, startX + 195 - 4, btnY - 2, 16, 14)) {
-            MediaControlScreen.isShuffleEnabled = !MediaControlScreen.isShuffleEnabled;
+            MediaControlScreen.isRepeatEnabled = !MediaControlScreen.isRepeatEnabled;
+            MediaManager.sendCommand("repeat");
             this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
                     net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
             cir.setReturnValue(true);
@@ -563,14 +564,20 @@ public class TitleScreenMixin extends Screen {
         }
     }
 
-    private void drawShuffleIcon(GuiGraphicsExtractor g, int x, int y, int color) {
-        g.fill(x, y + 2, x + 8, y + 3, color);
-        g.fill(x + 6, y + 1, x + 7, y + 2, color);
-        g.fill(x + 6, y + 3, x + 7, y + 4, color);
+    private void drawRepeatIcon(GuiGraphicsExtractor g, int x, int y, int color) {
+        // Top arrow curving right
+        g.fill(x + 2, y + 1, x + 8, y + 2, color);
+        g.fill(x + 1, y + 2, x + 2, y + 4, color);
+        g.fill(x + 8, y + 2, x + 9, y + 4, color);
+        g.fill(x + 6, y, x + 8, y + 1, color);
+        g.fill(x + 6, y + 2, x + 8, y + 3, color);
         
-        g.fill(x + 2, y + 5, x + 10, y + 6, color);
-        g.fill(x + 3, y + 4, x + 4, y + 5, color);
-        g.fill(x + 3, y + 6, x + 4, y + 7, color);
+        // Bottom arrow curving left
+        g.fill(x + 2, y + 6, x + 8, y + 7, color);
+        g.fill(x + 1, y + 4, x + 2, y + 6, color);
+        g.fill(x + 8, y + 4, x + 9, y + 6, color);
+        g.fill(x + 2, y + 5, x + 4, y + 6, color);
+        g.fill(x + 2, y + 7, x + 4, y + 8, color);
     }
 
     private void drawHamburgerIcon(GuiGraphicsExtractor g, int x, int y, int color) {

@@ -24,7 +24,6 @@ public class SpotifyVoicechatPlugin implements VoicechatPlugin {
     @Override
     public void registerEvents(EventRegistration registration) {
         registration.registerEvent(MergeClientSoundEvent.class, this::onMergeClientSound);
-        registration.registerEvent(ClientSoundEvent.class, this::onClientSound);
     }
 
     private void onMergeClientSound(MergeClientSoundEvent event) {
@@ -32,26 +31,23 @@ public class SpotifyVoicechatPlugin implements VoicechatPlugin {
             eventsFired = true;
         }
 
-        short[] frame = VoicechatAudioQueue.pollNextFrame();
-        if (frame != null) {
-            event.mergeAudio(frame);
-            mergeCount++;
-        }
-    }
-
-    private void onClientSound(ClientSoundEvent event) {
-        if (VoicechatAudioQueue.isPlaying()) {
+        boolean shouldPlay = (MediaControlScreen.isMicActive && MediaManager.isPlaying) || MediaControlScreen.isDirectMicActive;
+        if (shouldPlay) {
             short[] frame = VoicechatAudioQueue.pollNextFrame();
             if (frame != null) {
-                short[] existing = event.getRawAudio();
-                if (existing != null && existing.length == frame.length) {
-                    for (int i = 0; i < existing.length; i++) {
-                        int mixed = existing[i] + frame[i];
-                        existing[i] = (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, mixed));
+                float volume = LocalSoundPlayer.previewVolume;
+                if (volume != 1.0f) {
+                    for (int i = 0; i < frame.length; i++) {
+                        int val = (int) (frame[i] * volume);
+                        frame[i] = (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, val));
                     }
-                    event.setRawAudio(existing);
-                } else {
-                    event.setRawAudio(frame);
+                }
+                event.mergeAudio(frame);
+                mergeCount++;
+            } else {
+                if (MediaControlScreen.isDirectMicActive) {
+                    MediaControlScreen.isDirectMicActive = false;
+                    MediaControlScreen.currentMicFile = "";
                 }
             }
         }

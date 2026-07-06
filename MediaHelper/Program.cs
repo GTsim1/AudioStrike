@@ -11,9 +11,69 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.InteropServices;
 
 namespace MediaHelper
 {
+    // COM Interfaces for Audio Volume Control
+    [ComImport]
+    [Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
+    class MMDeviceEnumerator { }
+
+    [Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IMMDeviceEnumerator
+    {
+        int NotImpl1();
+        [PreserveSig] int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice ppEndpoint);
+    }
+
+    [Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IMMDevice
+    {
+        [PreserveSig] int Activate([MarshalAs(UnmanagedType.LPStruct)] Guid iid, int dwClsCtx, IntPtr pActivationParams, [MarshalAs(UnmanagedType.IUnknown)] out object ppInterface);
+    }
+
+    [Guid("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IAudioSessionManager2
+    {
+        int NotImpl1();
+        int NotImpl2();
+        [PreserveSig] int GetSessionEnumerator(out IAudioSessionEnumerator SessionEnum);
+    }
+
+    [Guid("E2F5BB11-0570-40CA-ACDD-3AA01277DEE8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IAudioSessionEnumerator
+    {
+        [PreserveSig] int GetCount(out int SessionCount);
+        [PreserveSig] int GetSession(int SessionCount, out IAudioSessionControl2 Session);
+    }
+
+    [Guid("bfb7ff88-7239-4fc9-8fa2-07c950be9c6d"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IAudioSessionControl2
+    {
+        [PreserveSig] int NotImpl0();
+        [PreserveSig] int GetDisplayName([MarshalAs(UnmanagedType.LPWStr)] out string pRetVal);
+        [PreserveSig] int NotImpl1();
+        [PreserveSig] int NotImpl2();
+        [PreserveSig] int NotImpl3();
+        [PreserveSig] int NotImpl4();
+        [PreserveSig] int NotImpl5();
+        [PreserveSig] int NotImpl6();
+        [PreserveSig] int NotImpl7();
+        [PreserveSig] int NotImpl8();
+        [PreserveSig] int NotImpl9();
+        [PreserveSig] int GetProcessId(out int pRetVal);
+    }
+
+    [Guid("87CE5498-68D6-44E5-9215-6DA47EF883D8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface ISimpleAudioVolume
+    {
+        [PreserveSig] int SetMasterVolume(float fLevel, ref Guid EventContext);
+        [PreserveSig] int GetMasterVolume(out float pfLevel);
+        [PreserveSig] int SetMute(bool bMute, ref Guid EventContext);
+        [PreserveSig] int GetMute(out bool pbMute);
+    }
+
     class Program
     {
         private static GlobalSystemMediaTransportControlsSessionManager? _manager;
@@ -495,6 +555,62 @@ namespace MediaHelper
                 _semaphore.Release();
             }
         }
+        private static void SetProcessVolume(string processName, float volume)
+        {
+            try
+            {
+                volume = Math.Clamp(volume, 0f, 1f);
+                var enumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();
+                if (enumerator == null) return;
+                
+                enumerator.GetDefaultAudioEndpoint(0, 1, out IMMDevice device);
+                if (device == null) return;
+                
+                Guid IID_IAudioSessionManager2 = new Guid("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F");
+                device.Activate(IID_IAudioSessionManager2, 1, IntPtr.Zero, out object managerObj);
+                if (managerObj == null) return;
+                
+                var manager = (IAudioSessionManager2)managerObj;
+                if (manager == null) return;
+
+                manager.GetSessionEnumerator(out IAudioSessionEnumerator sessionEnumerator);
+                if (sessionEnumerator == null) return;
+
+                sessionEnumerator.GetCount(out int count);
+
+                var targetPids = new List<int>();
+                foreach (var p in Process.GetProcessesByName(processName))
+                {
+                    targetPids.Add(p.Id);
+                }
+
+                for (int i = 0; i < count; i++)
+                {
+                    sessionEnumerator.GetSession(i, out IAudioSessionControl2 session);
+                    if (session == null) continue;
+                    session.GetProcessId(out int pid);
+                    
+                    if (targetPids.Contains(pid))
+                    {
+                        var simpleVolume = session as ISimpleAudioVolume;
+                        if (simpleVolume != null)
+                        {
+                            Guid ctx = Guid.Empty;
+                            int res = simpleVolume.SetMasterVolume(volume, ref ctx);
+                            Console.WriteLine(JsonSerializer.Serialize(new { Log = $"Set volume for pid {pid} to {volume}, result: {res}" }));
+                        }
+                        else
+                        {
+                            Console.WriteLine(JsonSerializer.Serialize(new { Log = $"Failed to get ISimpleAudioVolume for pid {pid}" }));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(JsonSerializer.Serialize(new { Log = "Volume error: " + ex.Message }));
+            }
+        }
 
         private static async Task ReadCommandsLoop()
         {
@@ -585,6 +701,29 @@ namespace MediaHelper
                         continue;
                     }
 
+                    if (line.StartsWith("volume "))
+                    {
+                        var parts = line.Split(' ');
+                        if (parts.Length > 1 && float.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float vol))
+                        {
+                            string procName = "Spotify";
+                            if (_currentSession != null && _currentSession.SourceAppUserModelId != null)
+                            {
+                                string aumid = _currentSession.SourceAppUserModelId;
+                                if (aumid.Equals("308046B0AF4A39CB", StringComparison.OrdinalIgnoreCase)) procName = "firefox";
+                                else if (aumid.Contains("Spotify", StringComparison.OrdinalIgnoreCase)) procName = "Spotify";
+                                else
+                                {
+                                    string p = aumid;
+                                    if (p.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) p = p.Substring(0, p.Length - 4);
+                                    procName = p;
+                                }
+                            }
+                            SetProcessVolume(procName, vol);
+                        }
+                        continue;
+                    }
+
                     if (_currentSession == null) continue;
 
                     if (line == "play")
@@ -598,6 +737,16 @@ namespace MediaHelper
                     else if (line == "toggle")
                     {
                         await _currentSession.TryTogglePlayPauseAsync();
+                    }
+                    else if (line == "repeat")
+                    {
+                        var info = _currentSession.GetPlaybackInfo();
+                        if (info != null && info.AutoRepeatMode.HasValue)
+                        {
+                            var mode = info.AutoRepeatMode.Value;
+                            var newMode = mode == Windows.Media.MediaPlaybackAutoRepeatMode.None ? Windows.Media.MediaPlaybackAutoRepeatMode.Track : Windows.Media.MediaPlaybackAutoRepeatMode.None;
+                            await _currentSession.TryChangeAutoRepeatModeAsync(newMode);
+                        }
                     }
                     else if (line == "next")
                     {

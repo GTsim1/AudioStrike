@@ -1,11 +1,15 @@
 {
 	"required": true,
 	"package": "com.example.client.mixin",
+	"refmap": "audiostrike-refmap.json",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
 		"ExampleClientMixin",
 		"LivingEntityMixin",
-		"TitleScreenMixin"
+		"TitleScreenMixin",
+		"MultiPlayerGameModeMixin",
+		"EntityRenderDispatcherMixin",
+		"AvatarRendererMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

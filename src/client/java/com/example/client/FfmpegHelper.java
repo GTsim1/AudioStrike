@@ -60,4 +60,38 @@ public class FfmpegHelper {
             }
         }).start();
     }
+
+    public static File ensureVoicechatFormat(File inputFile) {
+        try {
+            File vcFile = new File(inputFile.getParent(), "vc_" + inputFile.getName());
+            if (vcFile.exists()) {
+                return vcFile;
+            }
+            
+            File ffmpegExe = new File(System.getProperty("user.home"), ".spotdl/ffmpeg.exe");
+            File ffmpegBin = new File(System.getProperty("user.home"), ".spotdl/ffmpeg");
+            String ffmpegPath = "ffmpeg";
+            if (ffmpegExe.exists()) ffmpegPath = ffmpegExe.getAbsolutePath();
+            else if (ffmpegBin.exists()) ffmpegPath = ffmpegBin.getAbsolutePath();
+
+            ProcessBuilder pb = new ProcessBuilder(
+                ffmpegPath, 
+                "-y", 
+                "-i", inputFile.getAbsolutePath(), 
+                "-ac", "1", 
+                "-ar", "48000", 
+                vcFile.getAbsolutePath()
+            );
+            
+            Process process = pb.start();
+            int exitCode = process.waitFor();
+            
+            if (exitCode == 0 && vcFile.exists()) {
+                return vcFile;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return inputFile;
+    }
 }

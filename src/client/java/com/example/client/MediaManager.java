@@ -79,22 +79,62 @@ public class MediaManager {
     public static Identifier currentArtworkIdentifier = null;
     private static boolean artworkNeedsReload = false;
     
+    public static java.util.Set<String> likedSongs = new java.util.HashSet<>();
+    private static File likedSongsFile;
+    
     private static final Object lock = new Object();
 
     public static void start() {
         try {
-            InputStream is = MediaManager.class.getResourceAsStream("/assets/modid/MediaHelper.exe");
-            if (is == null) {
-                System.err.println("MediaHelper.exe not found in resources!");
-                return;
+            File runDir = Minecraft.getInstance().gameDirectory;
+            File configDir = new File(runDir, "config");
+            
+            File helperDir = new File(configDir, "audiostrike_helper");
+            if (!helperDir.exists()) {
+                helperDir.mkdirs();
+            }
+            File helperExe = new File(helperDir, "MediaHelper.exe");
+            
+            String currentVersion = "1.0.1";
+            File versionFile = new File(helperDir, "version.txt");
+            boolean needsExtract = true;
+            if (helperExe.exists() && versionFile.exists()) {
+                try {
+                    String v = new String(Files.readAllBytes(versionFile.toPath())).trim();
+                    if (v.equals(currentVersion)) needsExtract = false;
+                } catch (Exception e) {}
             }
             
-            File tempExe = new File(System.getProperty("java.io.tmpdir"), "MediaHelper.exe");
-            Files.copy(is, tempExe.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            tempExe.deleteOnExit();
+            if (needsExtract) {
+                InputStream is = MediaManager.class.getResourceAsStream("/assets/modid/MediaHelper.zip");
+                if (is == null) {
+                    System.err.println("MediaHelper.zip not found in resources!");
+                    return;
+                }
+                try (java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(is)) {
+                    java.util.zip.ZipEntry entry;
+                    while ((entry = zis.getNextEntry()) != null) {
+                        File outFile = new File(helperDir, entry.getName());
+                        if (entry.isDirectory()) {
+                            outFile.mkdirs();
+                        } else {
+                            outFile.getParentFile().mkdirs();
+                            Files.copy(zis, outFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        }
+                    }
+                }
+                Files.write(versionFile.toPath(), currentVersion.getBytes());
+            }
             
-            File runDir = Minecraft.getInstance().gameDirectory;
-            ProcessBuilder pb = new ProcessBuilder(tempExe.getAbsolutePath(), runDir.getAbsolutePath());
+            likedSongsFile = new File(configDir, "spotify_liked_songs.txt");
+            if (likedSongsFile.exists()) {
+                try {
+                    java.util.List<String> lines = Files.readAllLines(likedSongsFile.toPath());
+                    likedSongs.addAll(lines);
+                } catch (Exception e) {}
+            }
+            
+            ProcessBuilder pb = new ProcessBuilder(helperExe.getAbsolutePath(), runDir.getAbsolutePath());
             pb.redirectErrorStream(true);
             process = pb.start();
             
@@ -191,12 +231,26 @@ public class MediaManager {
                                          playbackSpeed = json.get("PlaybackSpeed").getAsDouble();
                                          timelineUpdateTime = json.get("TimelineUpdateTime").getAsLong();
                                          
+                                         MediaControlScreen.isFavorited = likedSongs.contains(title);
+                                         
                                          if (songChanged) {
                                              artworkPath = "";
                                              currentArtworkIdentifier = null;
                                              artworkNeedsReload = true;
                                              artworkWidth = 0;
                                              artworkHeight = 0;
+                                             
+                                             if (MediaControlScreen.isMicActive) {
+                                                 String matched = MediaControlScreen.getMatchedFile();
+                                                 if (matched != null) {
+                                                     MediaControlScreen.currentMicFile = matched;
+                                                     VoicechatAudioQueue.stop();
+                                                     VoicechatAudioQueue.playSound(matched);
+                                                 } else {
+                                                     MediaControlScreen.currentMicFile = "";
+                                                     VoicechatAudioQueue.stop();
+                                                 }
+                                             }
                                          }
                                          
                                          String newArtwork = json.get("ArtworkPath").getAsString();
@@ -217,6 +271,11 @@ public class MediaManager {
                                          currentArtworkIdentifier = null;
                                          artworkWidth = 0;
                                          artworkHeight = 0;
+                                         
+                                         if (MediaControlScreen.isMicActive) {
+                                             MediaControlScreen.currentMicFile = "";
+                                             VoicechatAudioQueue.stop();
+                                         }
                                      }
                                  }
                             }
@@ -259,29 +318,7 @@ public class MediaManager {
     private static int killSoundInstanceId = 0;
 
     public static void onKillRegistered(net.minecraft.world.entity.LivingEntity entity) {
-        if (!activeKillSoundFile.isEmpty()) {
-            LocalSoundPlayer.playKillSound(activeKillSoundFile);
-            VoicechatAudioQueue.playSound(activeKillSoundFile);
-            
-            final int currentId = ++killSoundInstanceId;
-            new Thread(() -> {
-                try {
-                    Thread.sleep(10000); // 10 seconds cutoff
-                    if (killSoundInstanceId == currentId) {
-                        LocalSoundPlayer.stopSound();
-                        VoicechatAudioQueue.stop();
-                    }
-                } catch (InterruptedException e) {}
-            }).start();
-
-            Minecraft client = Minecraft.getInstance();
-            if (client.player != null) {
-                String name = entity.getName().getString();
-                client.player.sendSystemMessage(
-                    net.minecraft.network.chat.Component.literal("§d[SpotifyMod] §a★ Slain " + name + "! Playing " + activeKillSoundFile + "... §a★")
-                );
-            }
-        }
+        ActionSoundManager.playActionSound(ActionSoundManager.ActionType.KILL_SOMEONE);
     }
 
     public static void stop() {
@@ -303,6 +340,22 @@ public class MediaManager {
             } catch (IOException e) {
                 System.err.println("Failed to send command to MediaHelper: " + e.getMessage());
             }
+        }
+    }
+    
+    public static void toggleLike() {
+        if (title.isEmpty()) return;
+        if (likedSongs.contains(title)) {
+            likedSongs.remove(title);
+            MediaControlScreen.isFavorited = false;
+        } else {
+            likedSongs.add(title);
+            MediaControlScreen.isFavorited = true;
+        }
+        if (likedSongsFile != null) {
+            try {
+                Files.write(likedSongsFile.toPath(), likedSongs);
+            } catch (Exception e) {}
         }
     }
 
@@ -397,11 +450,18 @@ public class MediaManager {
         }
         
         String sound = sounds.get(storedSongsIndex);
+        boolean songChanged = !sound.equals(title);
         hasSession = true;
         title = sound;
         artist = "Local Playlist";
         source = "Stored songs";
         isPlaying = com.example.client.LocalSoundPlayer.isClipPlaying();
+        
+        if (songChanged && MediaControlScreen.isMicActive) {
+            MediaControlScreen.currentMicFile = sound;
+            VoicechatAudioQueue.stop();
+            VoicechatAudioQueue.playSound(sound);
+        }
         
         if (sound.equals(com.example.client.LocalSoundPlayer.currentPlayingFile)) {
             position = com.example.client.LocalSoundPlayer.getClipPosition();
@@ -441,6 +501,8 @@ public class MediaManager {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        } else if (cmd.equals("repeat")) {
+            com.example.client.LocalSoundPlayer.setLooping(com.example.client.MediaControlScreen.isRepeatEnabled);
         }
     }
 
