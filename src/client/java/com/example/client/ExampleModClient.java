@@ -43,14 +43,6 @@ public class ExampleModClient implements ClientModInitializer {
             CATEGORY
         ));
 
-        // Register key mapping to like a song (Default: L)
-        KeyMapping likeSongKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-            "key.spotify_mod.like",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_L,
-            CATEGORY
-        ));
-
         // Register key mapping for Leaderboard (Default: O)
         KeyMapping leaderboardKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key.spotify_mod.leaderboard",
@@ -71,31 +63,7 @@ public class ExampleModClient implements ClientModInitializer {
                     String playerName = targetPlayer.getName().getString();
                     String song = ServerTracker.activeUsersOnServer.get(playerName);
                     if (song != null && !song.isEmpty()) {
-                        try {
-                            String url = "https://open.spotify.com/search/" + java.net.URLEncoder.encode(song, "UTF-8");
-                            net.minecraft.util.Util.getPlatform().openUri(new java.net.URI(url));
-                            if (client.player != null) {
-                                client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7aOpening Spotify search for: \u00a7f" + song));
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    } else {
-                        if (client.player != null) {
-                            client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7c" + playerName + " is not currently listening to anything."));
-                        }
-                    }
-                }
-            }
-            while (likeSongKey.consumeClick()) {
-                if (client.crosshairPickEntity != null && client.crosshairPickEntity instanceof net.minecraft.world.entity.player.Player targetPlayer) {
-                    String playerName = targetPlayer.getName().getString();
-                    String song = ServerTracker.activeUsersOnServer.get(playerName);
-                    if (song != null && !song.isEmpty()) {
-                        ServerTracker.sendLike(song);
-                        if (client.player != null) {
-                            client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7eSending like for: \u00a7f" + song + "..."));
-                        }
+                        client.setScreen(new PlayerActionScreen(playerName, song));
                     } else {
                         if (client.player != null) {
                             client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7c" + playerName + " is not currently listening to anything."));
