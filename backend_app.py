@@ -152,7 +152,12 @@ async def websocket_endpoint(websocket: WebSocket, server_ip: str, username: str
                         
                         # 1. Check if user already liked it
                         check_resp = requests.get(get_firebase_url(f"user_likes/{safe_user}/{s_key}"), timeout=2)
-                        if check_resp.json() is not True:
+                        
+                        if check_resp.status_code != 200:
+                            # Firebase Error (e.g. Permission Denied)
+                            error_msg = str(check_resp.text)
+                            await websocket.send_text(json.dumps({"type": "like_error", "message": f"Firebase Error: {error_msg}"}))
+                        elif check_resp.json() is not True:
                             # 2. Mark as liked
                             requests.put(get_firebase_url(f"user_likes/{safe_user}/{s_key}"), json=True)
                             
@@ -160,7 +165,10 @@ async def websocket_endpoint(websocket: WebSocket, server_ip: str, username: str
                             current_likes = 0
                             likes_resp = requests.get(get_firebase_url(f"songs/{s_key}/likes"), timeout=2)
                             if likes_resp.status_code == 200 and likes_resp.json() is not None:
-                                current_likes = int(likes_resp.json())
+                                try:
+                                    current_likes = int(likes_resp.json())
+                                except ValueError:
+                                    pass
                                 
                             new_likes = current_likes + 1
                             requests.patch(get_firebase_url(f"songs/{s_key}"), json={"name": target_song, "likes": new_likes})
