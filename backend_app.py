@@ -5,6 +5,7 @@ import os
 import requests
 import base64
 import asyncio
+import time
 
 app = FastAPI()
 
@@ -23,6 +24,8 @@ def safe_key(song: str) -> str:
 
 # In-memory cache for song likes to reduce DB reads
 song_likes_cache: Dict[str, int] = {}
+# Cooldown cache to prevent spam (username -> timestamp)
+user_cooldowns: Dict[str, float] = {}
 
 @app.get("/")
 def read_root():
@@ -144,6 +147,14 @@ async def websocket_endpoint(websocket: WebSocket, server_ip: str, username: str
                         
                 elif "action" in payload:
                     action = payload["action"]
+                    
+                    if action in ["like", "unlike"]:
+                        now = time.time()
+                        last_action = user_cooldowns.get(username, 0)
+                        if now - last_action < 1.0:
+                            await websocket.send_text(json.dumps({"type": "like_error", "message": "Please wait a second before clicking again!"}))
+                            continue
+                        user_cooldowns[username] = now
                     
                     if action == "like" and "song" in payload:
                         target_song = payload["song"]
