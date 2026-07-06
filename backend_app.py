@@ -204,6 +204,47 @@ async def websocket_endpoint(websocket: WebSocket, server_ip: str, username: str
                             print(f"Firebase Exception: {inner_e}", flush=True)
                             await websocket.send_text(json.dumps({"type": "like_error", "message": f"Python Error: {str(inner_e)}"}))
 
+                    elif action == "unlike" and "song" in payload:
+                        target_song = payload["song"]
+                        print(f"Received unlike action for '{target_song}' from '{username}'", flush=True)
+                        
+                        if not FIREBASE_URL:
+                            await websocket.send_text(json.dumps({"type": "like_error", "message": "Firebase URL is missing in server secrets!"}))
+                            continue
+                            
+                        s_key = safe_key(target_song)
+                        safe_user = safe_key(username)
+                        
+                        try:
+                            # 1. Check if user liked it
+                            check_resp = requests.get(get_firebase_url(f"user_likes/{safe_user}/{s_key}"), timeout=2)
+                            if check_resp.status_code != 200:
+                                await websocket.send_text(json.dumps({"type": "like_error", "message": "Firebase Error (Unlike)"}))
+                                continue
+                                
+                            check_data = check_resp.json()
+                            if check_data is not None:
+                                # User liked it, so we can unlike it
+                                requests.delete(get_firebase_url(f"user_likes/{safe_user}/{s_key}"), timeout=2)
+                                
+                                # Decrement total likes
+                                likes_resp = requests.get(get_firebase_url(f"songs/{s_key}/likes"), timeout=2)
+                                current_likes = likes_resp.json()
+                                if current_likes and isinstance(current_likes, int) and current_likes > 0:
+                                    requests.put(get_firebase_url(f"songs/{s_key}/likes"), json=current_likes - 1, timeout=2)
+                                    
+                                    # Delete from leaderboard if likes hit 0
+                                    if current_likes - 1 == 0:
+                                        requests.delete(get_firebase_url(f"songs/{s_key}"), timeout=2)
+                                
+                                await manager.broadcast_server_state(server_ip)
+                                await websocket.send_text(json.dumps({"type": "unlike_success", "song": target_song}))
+                            else:
+                                await websocket.send_text(json.dumps({"type": "like_error", "message": "You haven't liked this song yet!"}))
+                        except Exception as inner_e:
+                            print(f"Firebase Exception: {inner_e}", flush=True)
+                            await websocket.send_text(json.dumps({"type": "like_error", "message": f"Python Error: {str(inner_e)}"}))
+
                     elif action == "get_top":
                         if not FIREBASE_URL:
                             await websocket.send_text(json.dumps({"type": "like_error", "message": "Firebase URL is missing!"}))

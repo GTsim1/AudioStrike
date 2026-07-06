@@ -374,6 +374,33 @@ public class MediaManager {
         }
     }
 
+    public static void removeLikedLocally() {
+        if (title.isEmpty()) return;
+        likedSongs.remove(title);
+        String currentSongStr = title;
+        if (artist != null && !artist.isEmpty() && !artist.equals("Local Playlist")) {
+            currentSongStr += " - " + artist;
+            likedSongs.remove(currentSongStr);
+        }
+        MediaControlScreen.isFavorited = false;
+        if (likedSongsFile != null) {
+            try {
+                Files.write(likedSongsFile.toPath(), likedSongs);
+            } catch (Exception e) {}
+        }
+    }
+
+    public static void removeSongLikedLocally(String songName) {
+        if (songName == null || songName.isEmpty()) return;
+        likedSongs.remove(songName);
+        MediaControlScreen.isFavorited = false;
+        if (likedSongsFile != null) {
+            try {
+                Files.write(likedSongsFile.toPath(), likedSongs);
+            } catch (Exception e) {}
+        }
+    }
+
     public static void toggleLike() {
         if (title.isEmpty()) return;
         
@@ -382,11 +409,15 @@ public class MediaManager {
             currentSong += " - " + artist;
         }
         
-        // Send a global like
-        ServerTracker.sendLike(currentSong);
-        
-        // Save it locally so the heart stays pink visually
-        setLikedLocally();
+        if (MediaControlScreen.isFavorited) {
+            // Send unlike
+            ServerTracker.sendUnlike(currentSong);
+            removeLikedLocally();
+        } else {
+            // Send like
+            ServerTracker.sendLike(currentSong);
+            setLikedLocally();
+        }
     }
 
     public static void updateArtworkTexture(Minecraft client) {

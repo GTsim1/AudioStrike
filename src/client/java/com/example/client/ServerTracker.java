@@ -180,6 +180,12 @@ public class ServerTracker {
                                         if (client.player != null) {
                                             client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7aYou liked the song: \u00a7f" + song + " \u2665"));
                                         }
+                                    } else if (type.equals("unlike_success")) {
+                                        String song = responseJson.get("song").getAsString();
+                                        com.example.client.MediaManager.removeSongLikedLocally(song);
+                                        if (client.player != null) {
+                                            client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a77You unliked the song: \u00a7f" + song));
+                                        }
                                     } else if (type.equals("like_error")) {
                                         String errMsg = responseJson.get("message").getAsString();
                                         if (errMsg.equals("You already liked this song!") && responseJson.has("song")) {
@@ -246,6 +252,22 @@ public class ServerTracker {
             try {
                 JsonObject payload = new JsonObject();
                 payload.addProperty("action", "like");
+                payload.addProperty("song", song);
+                webSocket.sendText(payload.toString(), true);
+            } catch (Exception e) {}
+        } else {
+            Minecraft client = Minecraft.getInstance();
+            if (client.player != null) {
+                client.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7cError: Not connected to backend server."));
+            }
+        }
+    }
+
+    public static void sendUnlike(String song) {
+        if (webSocket != null) {
+            try {
+                JsonObject payload = new JsonObject();
+                payload.addProperty("action", "unlike");
                 payload.addProperty("song", song);
                 webSocket.sendText(payload.toString(), true);
             } catch (Exception e) {}
