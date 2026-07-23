@@ -16,13 +16,13 @@ public class FfmpegHelper {
                     return;
                 }
                 
-                // Save to a temporary file first, then replace original
+                
                 File tempFile = new File(killsoundsDir, "temp_crop_" + filename);
                 
                 File ffmpegExe = new File(System.getProperty("user.home"), ".spotdl/ffmpeg.exe");
                 File ffmpegBin = new File(System.getProperty("user.home"), ".spotdl/ffmpeg");
                 
-                String ffmpegPath = "ffmpeg"; // fallback to system PATH
+                String ffmpegPath = "ffmpeg"; 
                 if (ffmpegExe.exists()) ffmpegPath = ffmpegExe.getAbsolutePath();
                 else if (ffmpegBin.exists()) ffmpegPath = ffmpegBin.getAbsolutePath();
 
@@ -34,8 +34,8 @@ public class FfmpegHelper {
                     "-i", inputFile.getAbsolutePath(), 
                     "-ss", String.valueOf(startSec), 
                     "-t", String.valueOf(durationSec),
-                    "-ac", "1", // ensure mono
-                    "-ar", "48000", // ensure 48000Hz (useful for voicechat)
+                    "-ac", "1", 
+                    "-ar", "48000", 
                     tempFile.getAbsolutePath()
                 );
                 
@@ -46,7 +46,7 @@ public class FfmpegHelper {
                 System.out.println("ffmpeg crop exited with code: " + exitCode);
                 
                 if (exitCode == 0 && tempFile.exists()) {
-                    // Replace original file
+                    
                     inputFile.delete();
                     tempFile.renameTo(inputFile);
                     System.out.println("Crop successful, replaced original file.");

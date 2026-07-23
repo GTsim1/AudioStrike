@@ -41,7 +41,7 @@ public class PlayerActionScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
-        guiGraphics.fill(0, 0, this.width, this.height, 0x88000000); // Simple dark background
+        guiGraphics.fill(0, 0, this.width, this.height, 0x88000000); 
         
         guiGraphics.centeredText(this.font, Component.literal("\u00a7e" + targetPlayerName + "'s Song"), this.width / 2, this.height / 2 - 40, 0xFFFFFF);
         guiGraphics.centeredText(this.font, Component.literal("\u00a7f" + targetSong), this.width / 2, this.height / 2 - 25, 0xAAAAAA);

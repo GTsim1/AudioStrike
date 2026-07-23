@@ -21,15 +21,15 @@ public class ActionSoundScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // Darken background
+        
         guiGraphics.fill(0, 0, this.width, this.height, 0xAA000000);
 
         int startX = (this.width - CARD_WIDTH) / 2;
         int startY = (this.height - CARD_HEIGHT) / 2;
 
-        // Draw Card Background
+        
         guiGraphics.fill(startX, startY, startX + CARD_WIDTH, startY + CARD_HEIGHT, 0xF5121212);
-        // Draw Outline
+        
         guiGraphics.fill(startX, startY, startX + CARD_WIDTH, startY + 1, 0x33FFFFFF);
         guiGraphics.fill(startX, startY + CARD_HEIGHT - 1, startX + CARD_WIDTH, startY + CARD_HEIGHT, 0x33FFFFFF);
         guiGraphics.fill(startX, startY, startX + 1, startY + CARD_HEIGHT, 0x33FFFFFF);
@@ -61,7 +61,7 @@ public class ActionSoundScreen extends Screen {
             yOffset += 25;
         }
 
-        // Back Button
+        
         int backWidth = 80;
         int backX = this.width / 2 - backWidth / 2;
         int backY = startY + CARD_HEIGHT - 25;

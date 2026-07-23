@@ -38,12 +38,12 @@ public class TitleScreenMixin extends Screen {
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void onRender(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
-        // Ensure layout is loaded
+        
         if (MediaManager.cardWidth <= 140) {
             MediaManager.loadLayout();
         }
 
-        // Ensure texture is updated if changed in MediaManager
+        
         if (this.minecraft != null) {
             MediaManager.updateArtworkTexture(this.minecraft);
         }
@@ -111,11 +111,11 @@ public class TitleScreenMixin extends Screen {
         int localMouseX = (int) ((mouseX - MediaManager.cardX) / scaleX);
         int localMouseY = (int) ((mouseY - MediaManager.cardY) / scaleY);
 
-        // Re-assign mouse coordinates to local logical ones for all child render elements
+        
         mouseX = localMouseX;
         mouseY = localMouseY;
 
-        // Draw Card Background
+        
         Identifier artId = MediaManager.currentArtworkIdentifier;
         if (artId != null && MediaManager.artworkWidth > 0 && MediaManager.artworkHeight > 0) {
             guiGraphics.blit(RenderPipelines.GUI_TEXTURED, artId, startX, startY, 0.0f, 0.0f, CARD_WIDTH, CARD_HEIGHT, MediaManager.artworkWidth, MediaManager.artworkHeight, MediaManager.artworkWidth, MediaManager.artworkHeight);
@@ -264,18 +264,18 @@ public class TitleScreenMixin extends Screen {
         }
 
         if (isShiftHeld) {
-            // Draw dark tint overlay
+            
             guiGraphics.fill(0, 0, CARD_WIDTH, CARD_HEIGHT, 0x66000000);
             
-            // Draw edit mode border around the card
+            
             drawRoundedOutline(guiGraphics, 0, 0, CARD_WIDTH, CARD_HEIGHT, 0xFF1DB954);
             
-            // Draw a small diagonal stripes resize handle in the bottom-right corner
+            
             guiGraphics.fill(CARD_WIDTH - 12, CARD_HEIGHT - 3, CARD_WIDTH - 2, CARD_HEIGHT - 2, 0xFFFFFFFF);
             guiGraphics.fill(CARD_WIDTH - 9, CARD_HEIGHT - 6, CARD_WIDTH - 2, CARD_HEIGHT - 5, 0xFFFFFFFF);
             guiGraphics.fill(CARD_WIDTH - 6, CARD_HEIGHT - 9, CARD_WIDTH - 2, CARD_HEIGHT - 8, 0xFFFFFFFF);
             
-            // Draw helper text in the center
+            
             String infoText = "Shift + Drag to Move/Resize";
             int infoW = this.font.width(infoText);
             guiGraphics.text(this.font, infoText, CARD_WIDTH / 2 - infoW / 2, CARD_HEIGHT / 2 - 4, 0xFF1DB954, true);
@@ -286,7 +286,7 @@ public class TitleScreenMixin extends Screen {
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void onMouseClicked(MouseButtonEvent event, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
-        // Ensure layout is loaded
+        
         if (MediaManager.cardWidth <= 140) {
             MediaManager.loadLayout();
         }
@@ -299,7 +299,7 @@ public class TitleScreenMixin extends Screen {
                                                     org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS);
 
         if (isShiftHeld) {
-            // Cancel clicks inside the card while Shift is held
+            
             if (mouseX >= MediaManager.cardX && mouseX <= MediaManager.cardX + MediaManager.cardWidth &&
                 mouseY >= MediaManager.cardY && mouseY <= MediaManager.cardY + MediaManager.cardHeight) {
                 cir.setReturnValue(true);
@@ -307,20 +307,20 @@ public class TitleScreenMixin extends Screen {
             return;
         }
 
-        // If clicked outside the card, just let it pass
+        
         if (mouseX < MediaManager.cardX || mouseX > MediaManager.cardX + MediaManager.cardWidth ||
             mouseY < MediaManager.cardY || mouseY > MediaManager.cardY + MediaManager.cardHeight) {
             return;
         }
 
-        // Convert coordinates to logical ones for click handler
+        
         float scaleX = (float) MediaManager.cardWidth / CARD_WIDTH;
         float scaleY = (float) MediaManager.cardHeight / CARD_HEIGHT;
 
         double localMouseX = (mouseX - MediaManager.cardX) / scaleX;
         double localMouseY = (mouseY - MediaManager.cardY) / scaleY;
 
-        // Map mouseX and mouseY to local coordinate system for the rest of click handler code!
+        
         mouseX = localMouseX;
         mouseY = localMouseY;
         
@@ -565,14 +565,14 @@ public class TitleScreenMixin extends Screen {
     }
 
     private void drawRepeatIcon(GuiGraphicsExtractor g, int x, int y, int color) {
-        // Top arrow curving right
+        
         g.fill(x + 2, y + 1, x + 8, y + 2, color);
         g.fill(x + 1, y + 2, x + 2, y + 4, color);
         g.fill(x + 8, y + 2, x + 9, y + 4, color);
         g.fill(x + 6, y, x + 8, y + 1, color);
         g.fill(x + 6, y + 2, x + 8, y + 3, color);
         
-        // Bottom arrow curving left
+        
         g.fill(x + 2, y + 6, x + 8, y + 7, color);
         g.fill(x + 1, y + 4, x + 2, y + 6, color);
         g.fill(x + 8, y + 4, x + 9, y + 6, color);
@@ -591,7 +591,7 @@ public class TitleScreenMixin extends Screen {
         Object windowObj = this.minecraft.getWindow();
         if (windowObj == null) return 0L;
         
-        // Try known method names first
+        
         for (String methodName : new String[]{"getWindow", "getWindowId", "getHandle", "handle"}) {
             try {
                 java.lang.reflect.Method method = windowObj.getClass().getMethod(methodName);
@@ -601,11 +601,11 @@ public class TitleScreenMixin extends Screen {
                     return (Long) res;
                 }
             } catch (Exception e) {
-                // Ignore and try next
+                
             }
         }
         
-        // Fallback: search all methods returning long
+        
         for (java.lang.reflect.Method method : windowObj.getClass().getDeclaredMethods()) {
             if (method.getReturnType() == long.class && method.getParameterCount() == 0) {
                 try {
@@ -615,12 +615,12 @@ public class TitleScreenMixin extends Screen {
                         return (Long) res;
                     }
                 } catch (Exception e) {
-                    // Ignore
+                    
                 }
             }
         }
         
-        // Fallback: search all fields of type long
+        
         for (java.lang.reflect.Field field : windowObj.getClass().getDeclaredFields()) {
             if (field.getType() == long.class) {
                 try {
@@ -630,7 +630,7 @@ public class TitleScreenMixin extends Screen {
                         return (Long) res;
                     }
                 } catch (Exception e) {
-                    // Ignore
+                    
                 }
             }
         }

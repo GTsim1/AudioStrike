@@ -19,6 +19,7 @@ public class AudioStrikeConfig {
     public boolean showOtherPlayersSongs = true;
     public boolean broadcastMySong = true;
     public boolean showLikesOnNametag = true;
+    public boolean forceDawnClientCompat = false;
 
     private static AudioStrikeConfig INSTANCE;
 

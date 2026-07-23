@@ -15,7 +15,7 @@ using System.Runtime.InteropServices;
 
 namespace MediaHelper
 {
-    // COM Interfaces for Audio Volume Control
+    
     [ComImport]
     [Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
     class MMDeviceEnumerator { }
@@ -82,7 +82,7 @@ namespace MediaHelper
         private static string? _overrideSessionId = null;
         private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
-        // Spotify API & Configuration
+        
         private static string _configPath = "";
         private static string _spotifyClientId = "";
         private static string _spotifyClientSecret = "";
@@ -97,7 +97,7 @@ namespace MediaHelper
             Console.SetOut(standardOutputWriter);
             _artworkPath = Path.Combine(Path.GetTempPath(), "spotify_mod_artwork.png");
 
-            // Setup configuration directory from Minecraft runDirectory argument
+            
             string gameDir = args.Length > 0 ? args[0] : AppDomain.CurrentDomain.BaseDirectory;
             string configDir = Path.Combine(gameDir, "config");
             _configPath = Path.Combine(configDir, "spotify_mod.properties");
@@ -290,14 +290,14 @@ namespace MediaHelper
                     procName = procName.Substring(0, procName.Length - 4);
                 }
                 
-                // Try direct match first
+                
                 var processes = Process.GetProcessesByName(procName);
                 if (processes.Length > 0)
                 {
                     return processes[0].MainModule?.FileName ?? "";
                 }
 
-                // Try fuzzy match for UWP / packaged apps
+                
                 string lowAumid = aumid.ToLower();
                 var allProcs = Process.GetProcesses();
                 foreach (var proc in allProcs)
@@ -523,7 +523,7 @@ namespace MediaHelper
                     }
                     catch
                     {
-                        // Ignore thumbnail loading issues if locked or empty
+                        
                     }
                 }
 

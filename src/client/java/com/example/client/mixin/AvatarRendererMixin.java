@@ -14,18 +14,25 @@ public class AvatarRendererMixin {
 
     @Inject(method = "extractRenderState(Lnet/minecraft/world/entity/Avatar;Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;F)V", at = @At("TAIL"))
     private void onExtractRenderState(net.minecraft.world.entity.Avatar entity, AvatarRenderState state, float partialTicks, CallbackInfo ci) {
-        
-        // Always run this mixin for both Vanilla and Dawn Client
+        com.example.client.AudioStrikeConfig config = com.example.client.AudioStrikeConfig.getInstance();
+        boolean isLocalPlayer = net.minecraft.client.Minecraft.getInstance().player != null && net.minecraft.client.Minecraft.getInstance().player.getUUID().equals(entity.getUUID());
 
-        String playerName = entity.getName().getString();
-        String song = com.example.client.ServerTracker.activeUsersOnServer.get(playerName);
+        
+
+        String rawName = entity.getName().getString();
+        String foundPlayer = null;
+        for (String player : com.example.client.ServerTracker.activeUsersOnServer.keySet()) {
+            if (rawName.contains(player)) {
+                foundPlayer = player;
+                break;
+            }
+        }
+        
+        String song = foundPlayer != null ? com.example.client.ServerTracker.activeUsersOnServer.get(foundPlayer) : null;
         
         if (song != null && !song.isEmpty()) {
-            com.example.client.AudioStrikeConfig config = com.example.client.AudioStrikeConfig.getInstance();
-            
-            boolean isLocalPlayer = net.minecraft.client.Minecraft.getInstance().player != null && net.minecraft.client.Minecraft.getInstance().player.getUUID().equals(entity.getUUID());
             if (!config.showOtherPlayersSongs && !isLocalPlayer) {
-                return; // Skip rendering for other players if config is disabled
+                return; 
             }
             
             int maxLength = config.maxCharacters;
@@ -45,23 +52,24 @@ public class AvatarRendererMixin {
                 }
             }
             
-            // Added leading space so Dawn's background box padding covers the left edge properly
-            String iconChar = FabricLoader.getInstance().isModLoaded("dawn") ? "\uE001" : "\uE000";
-            // Check if the song has likes
+            
+            boolean isDawn = FabricLoader.getInstance().isModLoaded("dawn") || config.forceDawnClientCompat;
+            String iconChar = isDawn ? "\uE001" : "\uE000";
+            
             String likeSuffix = "";
             if (config.showLikesOnNametag) {
-                Integer likes = com.example.client.ServerTracker.activeUsersOnServerLikes.get(playerName);
+                Integer likes = com.example.client.ServerTracker.activeUsersOnServerLikes.get(foundPlayer);
                 likeSuffix = (likes != null && likes > 0) ? " \u00a7c(" + likes + " \u2665)\u00a7f" : "";
             }
 
-            // Added a single trailing space so it doesn't end abruptly
+            
             Component songComponent = Component.literal(" " + iconChar + " " + displaySong + likeSuffix + " ");
             
             if (state.scoreText != null) {
-                // If there's already a scoreboard below the name, append to it
+                
                 state.scoreText = Component.literal("").append(state.scoreText).append(" | ").append(songComponent);
             } else {
-                // Otherwise, use the scoreboard slot for our song
+                
                 state.scoreText = songComponent;
             }
         }

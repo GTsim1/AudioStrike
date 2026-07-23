@@ -30,7 +30,7 @@ public class SpotDLDownloader {
 
                 System.out.println("Starting SpotDL download for: " + link);
                 
-                // spotdl <query> --format wav --output killsounds/{title}.{ext} --ffmpeg-args "-ac 1 -ar 48000"
+                
                 ProcessBuilder pb = new ProcessBuilder(
                     "python", "-m", "spotdl", link,
                     "--format", "wav",

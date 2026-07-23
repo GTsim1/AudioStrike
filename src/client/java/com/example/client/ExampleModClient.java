@@ -16,18 +16,18 @@ public class ExampleModClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        // Start the media companion process
+        
         MediaManager.start();
         ActionSoundManager.init();
         ServerTracker.start();
 
-        // Register shutdown hook to clean up companion process
+        
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             MediaManager.stop();
             ServerTracker.stop();
         }));
 
-        // Register key mapping bound to 'P'
+        
         openMediaControlKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key.spotify_mod.open",
             InputConstants.Type.KEYSYM,
@@ -35,7 +35,7 @@ public class ExampleModClient implements ClientModInitializer {
             CATEGORY
         ));
 
-        // Register key mapping to search Spotify (Default: V)
+        
         KeyMapping searchSpotifyKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key.spotify_mod.search",
             InputConstants.Type.KEYSYM,
@@ -43,7 +43,7 @@ public class ExampleModClient implements ClientModInitializer {
             CATEGORY
         ));
 
-        // Register key mapping for Leaderboard (Default: O)
+        
         KeyMapping leaderboardKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key.spotify_mod.leaderboard",
             InputConstants.Type.KEYSYM,
@@ -51,7 +51,7 @@ public class ExampleModClient implements ClientModInitializer {
             CATEGORY
         ));
 
-        // Listen for client tick to check for key press
+        
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openMediaControlKey.consumeClick()) {
                 if (client.screen == null) {
@@ -79,7 +79,7 @@ public class ExampleModClient implements ClientModInitializer {
             }
         });
 
-        // Track last attacked entity client-side for kill sound triggers
+        
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
             if (world.isClientSide() && player == Minecraft.getInstance().player) {
                 MediaManager.lastAttackedEntityId = entity.getId();

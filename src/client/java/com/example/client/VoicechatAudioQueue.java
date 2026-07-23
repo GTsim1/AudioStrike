@@ -43,9 +43,9 @@ public class VoicechatAudioQueue {
                     targetStream = sourceStream;
                 }
 
-                // 48000Hz 16-bit Mono = 96000 bytes per second
+                
                 long bytesToSkip = (long) (startSec * 96000.0);
-                bytesToSkip = (bytesToSkip / 2) * 2; // align to 16-bit frame
+                bytesToSkip = (bytesToSkip / 2) * 2; 
                 if (bytesToSkip > 0 && sessionId == currentSessionId) {
                     long skipped = 0;
                     while (skipped < bytesToSkip && sessionId == currentSessionId) {
@@ -55,8 +55,8 @@ public class VoicechatAudioQueue {
                     }
                 }
 
-                // Simple Voice Chat expects 20ms frames at 48000Hz mono, which is 960 samples
-                // 16-bit audio = 2 bytes per sample. 960 * 2 = 1920 bytes.
+                
+                
                 byte[] byteBuffer = new byte[960 * 2];
                 int bytesRead;
                 while (sessionId == currentSessionId && (bytesRead = targetStream.read(byteBuffer)) != -1) {
@@ -67,7 +67,7 @@ public class VoicechatAudioQueue {
                         
                         if (sessionId != currentSessionId) break;
                         
-                        // If it has fewer than 960 samples, pad it with silence
+                        
                         if (samples < 960) {
                             short[] padded = new short[960];
                             System.arraycopy(shortBuffer, 0, padded, 0, samples);

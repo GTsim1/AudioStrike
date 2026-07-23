@@ -18,7 +18,7 @@ public class MediaManager {
     private static BufferedWriter writer;
     private static Thread readerThread;
     
-    // Nested Session Class
+    
     public static class MediaSession {
         public String id;
         public String name;
@@ -37,7 +37,7 @@ public class MediaManager {
     
     public static java.util.List<MediaSession> activeSessions = new java.util.ArrayList<>();
     
-    // Spotify Search results & persistent kill song states
+    
     public static class SearchResult {
         public String title;
         public String artist;
@@ -61,7 +61,7 @@ public class MediaManager {
     public static int cardWidth = 280;
     public static int cardHeight = 130;
 
-    // Media States
+    
     public static boolean hasSession = false;
     public static String title = "";
     public static String artist = "";
@@ -178,7 +178,7 @@ public class MediaManager {
                             }
                             
                             synchronized (lock) {
-                                // Parse active sessions list
+                                
                                 if (json.has("Sessions")) {
                                     JsonArray sessionsArray = json.getAsJsonArray("Sessions");
                                     java.util.List<MediaSession> newSessionsList = new java.util.ArrayList<>();
@@ -284,7 +284,7 @@ public class MediaManager {
                                  }
                             }
                         } catch (Exception e) {
-                            // JSON parsing error or empty line
+                            
                         }
                     }
                 } catch (IOException e) {
@@ -410,11 +410,11 @@ public class MediaManager {
         }
         
         if (MediaControlScreen.isFavorited) {
-            // Send unlike
+            
             ServerTracker.sendUnlike(currentSong);
             removeLikedLocally();
         } else {
-            // Send like
+            
             ServerTracker.sendLike(currentSong);
             setLikedLocally();
         }
@@ -445,7 +445,7 @@ public class MediaManager {
                                 artworkWidth = image.getWidth();
                                 artworkHeight = image.getHeight();
                                 DynamicTexture texture = new DynamicTexture(() -> "spotify_artwork", image);
-                                texture.upload();
+                                
                                 
                                 Identifier id = Identifier.fromNamespaceAndPath("modid", "dynamic/artwork");
                                 client.getTextureManager().register(id, texture);
@@ -459,7 +459,7 @@ public class MediaManager {
             }
         }
         
-        // Update session icons
+        
         java.util.List<MediaSession> sessionsToUpdate = new java.util.ArrayList<>();
         synchronized (lock) {
             for (MediaSession session : activeSessions) {
@@ -478,7 +478,7 @@ public class MediaManager {
                         try (FileInputStream fis = new FileInputStream(file)) {
                             NativeImage image = NativeImage.read(fis);
                             DynamicTexture texture = new DynamicTexture(() -> "spotify_icon_" + session.id, image);
-                            texture.upload();
+                            
                             
                             String pathSafeId = session.id.toLowerCase().replaceAll("[^a-z0-9/._-]", "_");
                             Identifier id = Identifier.fromNamespaceAndPath("modid", "dynamic/icon/" + pathSafeId);

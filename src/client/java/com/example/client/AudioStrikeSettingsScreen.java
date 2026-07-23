@@ -20,7 +20,16 @@ public class AudioStrikeSettingsScreen extends Screen {
         int centerX = this.width / 2;
         int startY = this.height / 4;
 
-        // Animation Toggle
+        
+        this.addRenderableWidget(Button.builder(
+                Component.literal("Show Likes: " + (config.showLikesOnNametag ? "ON" : "OFF")),
+                button -> {
+                    config.showLikesOnNametag = !config.showLikesOnNametag;
+                    button.setMessage(Component.literal("Show Likes: " + (config.showLikesOnNametag ? "ON" : "OFF")));
+                }
+        ).bounds(centerX - 100, startY - 25, 200, 20).build());
+
+        
         this.addRenderableWidget(Button.builder(
                 Component.literal("Animation: " + (config.enableAnimation ? "ON" : "OFF")),
                 button -> {
@@ -29,7 +38,7 @@ public class AudioStrikeSettingsScreen extends Screen {
                 }
         ).bounds(centerX - 100, startY, 200, 20).build());
 
-        // Broadcast My Song Toggle
+        
         this.addRenderableWidget(Button.builder(
                 Component.literal("Broadcast My Song: " + (config.broadcastMySong ? "ON" : "OFF")),
                 button -> {
@@ -38,7 +47,7 @@ public class AudioStrikeSettingsScreen extends Screen {
                 }
         ).bounds(centerX - 100, startY + 25, 200, 20).build());
 
-        // Show Others' Songs Toggle
+        
         this.addRenderableWidget(Button.builder(
                 Component.literal("Show Others' Songs: " + (config.showOtherPlayersSongs ? "ON" : "OFF")),
                 button -> {
@@ -47,7 +56,7 @@ public class AudioStrikeSettingsScreen extends Screen {
                 }
         ).bounds(centerX - 100, startY + 50, 200, 20).build());
 
-        // Show All Characters Toggle
+        
         this.addRenderableWidget(Button.builder(
                 Component.literal("Show Full Name: " + (config.showAllCharacters ? "ON" : "OFF")),
                 button -> {
@@ -56,16 +65,7 @@ public class AudioStrikeSettingsScreen extends Screen {
                 }
         ).bounds(centerX - 100, startY + 75, 200, 20).build());
 
-        // Show Likes on Nametag Toggle
-        this.addRenderableWidget(Button.builder(
-                Component.literal("Show Likes: " + (config.showLikesOnNametag ? "ON" : "OFF")),
-                button -> {
-                    config.showLikesOnNametag = !config.showLikesOnNametag;
-                    button.setMessage(Component.literal("Show Likes: " + (config.showLikesOnNametag ? "ON" : "OFF")));
-                }
-        ).bounds(centerX + 110, startY + 75, 120, 20).build());
-
-        // Max Characters Buttons (- / +)
+        
         this.addRenderableWidget(Button.builder(
                 Component.literal("-"),
                 button -> {
@@ -80,7 +80,16 @@ public class AudioStrikeSettingsScreen extends Screen {
                 }
         ).bounds(centerX + 80, startY + 100, 20, 20).build());
 
-        // Done Button
+        
+        this.addRenderableWidget(Button.builder(
+                Component.literal("Dawn Client Fix: " + (config.forceDawnClientCompat ? "ON" : "OFF")),
+                button -> {
+                    config.forceDawnClientCompat = !config.forceDawnClientCompat;
+                    button.setMessage(Component.literal("Dawn Client Fix: " + (config.forceDawnClientCompat ? "ON" : "OFF")));
+                }
+        ).bounds(centerX - 100, startY + 125, 200, 20).build());
+
+        
         this.addRenderableWidget(Button.builder(
                 Component.literal("Done"),
                 button -> this.onClose()
@@ -110,19 +119,19 @@ public class AudioStrikeSettingsScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
-        guiGraphics.fill(0, 0, this.width, this.height, 0x88000000); // Simple dark background
+        guiGraphics.fill(0, 0, this.width, this.height, 0x88000000); 
         guiGraphics.centeredText(this.font, this.title, this.width / 2, 20, 0xFFFFFFFF);
         
         guiGraphics.centeredText(this.font, Component.literal("Max Characters: " + config.maxCharacters), this.width / 2, this.height / 4 + 106, 0xFFFFFFFF);
         
-        // Render Preview
+        
         guiGraphics.centeredText(this.font, Component.literal("Preview:"), this.width / 2, this.height / 4 + 130, 0xFFAAAAAA);
         String previewText = getPreviewText();
         int previewWidth = this.font.width(previewText);
         int previewX = (this.width - previewWidth) / 2;
         int previewY = this.height / 4 + 145;
         
-        // Draw nametag background
+        
         int padding = 2;
         guiGraphics.fill(previewX - padding - 1, previewY - padding - 1, previewX + previewWidth + padding + 1, previewY + 9 + padding + 1, 0x40000000);
         guiGraphics.text(this.font, previewText, previewX, previewY, 0xFFFFFFFF, false);

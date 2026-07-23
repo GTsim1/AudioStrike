@@ -48,7 +48,7 @@ public class AudioCropScreen extends Screen {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            this.durationSec = 60; // fallback
+            this.durationSec = 60; 
         }
     }
 
@@ -60,43 +60,43 @@ public class AudioCropScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // Draw background
+        
         guiGraphics.fill(0, 0, this.width, this.height, 0x88000000);
         
-        // Draw window
+        
         guiGraphics.fill(startX, startY, startX + WIDTH, startY + HEIGHT, 0xFF121212);
         guiGraphics.fill(startX - 1, startY - 1, startX + WIDTH + 1, startY + HEIGHT + 1, 0x33FFFFFF);
-        guiGraphics.fill(startX, startY, startX + WIDTH, startY + HEIGHT, 0x00000000); // clear center border
+        guiGraphics.fill(startX, startY, startX + WIDTH, startY + HEIGHT, 0x00000000); 
         
-        // Title
+        
         guiGraphics.text(this.font, "Crop Audio (Max 10s)", startX + WIDTH / 2 - this.font.width("Crop Audio (Max 10s)") / 2, startY + 15, 0xFFFFFFFF, false);
         guiGraphics.text(this.font, truncateString(filename, WIDTH - 40), startX + 20, startY + 40, 0xFF888888, false);
         
-        // Timeline area
+        
         int tX = startX + 20;
         int tY = startY + 80;
         int tW = WIDTH - 40;
         int tH = 20;
         
-        // Draw base timeline
+        
         guiGraphics.fill(tX, tY, tX + tW, tY + tH, 0xFF333333);
         
-        // Draw selected region
+        
         int selStartX = tX + (int)((startSec / durationSec) * tW);
         int selEndX = tX + (int)((endSec / durationSec) * tW);
         guiGraphics.fill(selStartX, tY, selEndX, tY + tH, 0xFF1DB954);
         
-        // Draw handles
-        guiGraphics.fill(selStartX - 3, tY - 2, selStartX + 3, tY + tH + 2, 0xFFFFFFFF); // left handle
-        guiGraphics.fill(selEndX - 3, tY - 2, selEndX + 3, tY + tH + 2, 0xFFFFFFFF); // right handle
         
-        // Draw times
+        guiGraphics.fill(selStartX - 3, tY - 2, selStartX + 3, tY + tH + 2, 0xFFFFFFFF); 
+        guiGraphics.fill(selEndX - 3, tY - 2, selEndX + 3, tY + tH + 2, 0xFFFFFFFF); 
+        
+        
         String startStr = formatTime(startSec);
         String endStr = formatTime(endSec);
         guiGraphics.text(this.font, startStr, selStartX - this.font.width(startStr)/2, tY - 12, 0xFFFFFFFF, false);
         guiGraphics.text(this.font, endStr, selEndX - this.font.width(endStr)/2, tY - 12, 0xFFFFFFFF, false);
         
-        // Draw preview progress if playing
+        
         if (isPreviewing) {
             double elapsed = (System.currentTimeMillis() - previewStartTime) / 1000.0;
             if (elapsed > (endSec - startSec)) {
@@ -108,28 +108,28 @@ public class AudioCropScreen extends Screen {
             }
         }
         
-        // Buttons
+        
         int btnY = startY + HEIGHT - 40;
         
-        // Preview button
+        
         int prevX = startX + 20;
         boolean prevHover = isHovering(mouseX, mouseY, prevX, btnY, 80, 20);
         guiGraphics.fill(prevX, btnY, prevX + 80, btnY + 20, prevHover ? 0xFF555555 : 0xFF333333);
         guiGraphics.text(this.font, isPreviewing ? "Stop" : "Preview", prevX + 40 - this.font.width(isPreviewing ? "Stop" : "Preview")/2, btnY + 6, 0xFFFFFFFF, false);
         
-        // Save button
+        
         int saveX = startX + WIDTH - 180;
         boolean saveHover = isHovering(mouseX, mouseY, saveX, btnY, 70, 20);
         guiGraphics.fill(saveX, btnY, saveX + 70, btnY + 20, saveHover ? 0xFF1ED760 : 0xFF1DB954);
         guiGraphics.text(this.font, "Save", saveX + 35 - this.font.width("Save")/2, btnY + 6, 0xFFFFFFFF, false);
         
-        // Cancel button
+        
         int cancelX = startX + WIDTH - 100;
         boolean cancelHover = isHovering(mouseX, mouseY, cancelX, btnY, 80, 20);
         guiGraphics.fill(cancelX, btnY, cancelX + 80, btnY + 20, cancelHover ? 0xFF555555 : 0xFF333333);
         guiGraphics.text(this.font, "Cancel", cancelX + 40 - this.font.width("Cancel")/2, btnY + 6, 0xFFFFFFFF, false);
         
-        // Handle dragging
+        
         if (isDraggingStart || isDraggingEnd || isDraggingTimeline) {
             double mouseSec = ((double)(mouseX - tX) / tW) * durationSec;
             mouseSec = Math.max(0, Math.min(durationSec, mouseSec));
@@ -173,7 +173,7 @@ public class AudioCropScreen extends Screen {
         int selStartX = tX + (int)((startSec / durationSec) * tW);
         int selEndX = tX + (int)((endSec / durationSec) * tW);
         
-        // Check handles
+        
         if (mouseY >= tY - 5 && mouseY <= tY + tH + 5) {
             if (Math.abs(mouseX - selStartX) <= 6) {
                 isDraggingStart = true;
@@ -188,7 +188,7 @@ public class AudioCropScreen extends Screen {
         }
         
         int btnY = startY + HEIGHT - 40;
-        // Preview button
+        
         if (isHovering((int)mouseX, (int)mouseY, startX + 20, btnY, 80, 20)) {
             this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
                     net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
@@ -203,12 +203,12 @@ public class AudioCropScreen extends Screen {
             return true;
         }
         
-        // Save button
+        
         if (isHovering((int)mouseX, (int)mouseY, startX + WIDTH - 180, btnY, 70, 20)) {
             this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
                     net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
             
-            // Do crop
+            
             FfmpegHelper.cropAudio(filename, startSec, endSec - startSec);
             MediaManager.activeKillSoundFile = filename;
             
@@ -216,7 +216,7 @@ public class AudioCropScreen extends Screen {
             return true;
         }
         
-        // Cancel button
+        
         if (isHovering((int)mouseX, (int)mouseY, startX + WIDTH - 100, btnY, 80, 20)) {
             this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
                     net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));

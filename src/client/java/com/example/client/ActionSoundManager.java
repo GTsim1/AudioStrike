@@ -40,7 +40,7 @@ public class ActionSoundManager {
         configFile = new File(System.getProperty("user.dir"), "config/audiostrike_actions.json");
         load();
         
-        // Migrate legacy kill sound
+        
         if (!MediaManager.activeKillSoundFile.isEmpty()) {
             if (!actionSounds.containsKey(ActionType.KILL_SOMEONE)) {
                 assignSound(ActionType.KILL_SOMEONE, MediaManager.activeKillSoundFile);

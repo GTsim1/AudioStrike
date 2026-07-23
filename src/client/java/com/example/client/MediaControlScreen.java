@@ -35,7 +35,7 @@ public class MediaControlScreen extends Screen {
     public static boolean isMainVolumeSliderOpen = false;
     public static boolean isDraggingMainVolumeSlider = false;
 
-    // Mic test toggle state: tracks which sound file is being transmitted via mic (empty = off)
+    
     public static volatile String currentMicFile = "";
     
     private double galleryScrollOffset = 0;
@@ -65,7 +65,7 @@ public class MediaControlScreen extends Screen {
         this.isDraggingSlider = false;
         this.dragPosition = -1;
 
-        // Initialize the Spotify Link Input Box
+        
         this.linkField = new net.minecraft.client.gui.components.EditBox(
             this.font,
             this.startX + 20,
@@ -83,39 +83,39 @@ public class MediaControlScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // Ensure texture is updated if changed in MediaManager
+        
         if (this.minecraft != null) {
             MediaManager.updateArtworkTexture(this.minecraft);
         }
 
-        // 1. Draw Card Background (stretched album art if available)
+        
         Identifier artId = MediaManager.currentArtworkIdentifier;
         if (artId != null && MediaManager.artworkWidth > 0 && MediaManager.artworkHeight > 0) {
             guiGraphics.blit(RenderPipelines.GUI_TEXTURED, artId, startX, startY, 0.0f, 0.0f, CARD_WIDTH, CARD_HEIGHT, MediaManager.artworkWidth, MediaManager.artworkHeight, MediaManager.artworkWidth, MediaManager.artworkHeight);
         }
         
-        // Draw standard darkening overlay so text remains readable (rounded rectangle)
+        
         drawRoundedRect(guiGraphics, startX, startY, CARD_WIDTH, CARD_HEIGHT, 0xA01E1E1E);
 
-        // Draw Card Border (subtle semi-transparent Glassmorphic rounded outline)
+        
         drawRoundedOutline(guiGraphics, startX, startY, CARD_WIDTH, CARD_HEIGHT, 0x33FFFFFF);
 
-        // Calculate bottom-right menu button hover state
+        
         int menuX = startX + 225;
         int menuY = startY + 106;
         boolean isMenuHovered = isHovering(mouseX, mouseY, menuX - 3, menuY - 3, 16, 16);
 
         if (isSetupOpen) {
             int setupHeight = 300;
-            // Draw SpotDL Setup Panel (solid dark glass layer)
+            
             drawRoundedRect(guiGraphics, startX + 5, startY + 5, CARD_WIDTH - 10, setupHeight, 0xF5121212);
             drawRoundedOutline(guiGraphics, startX + 5, startY + 5, CARD_WIDTH - 10, setupHeight, 0x22FFFFFF);
 
-            // Render visible screen widgets (the EditBox) manually to avoid Screen's background blur
+            
             if (this.linkField != null && this.linkField.isVisible()) {
                 this.linkField.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
             }
-                // Title
+                
                 String titleStr = "Spotify Mod Setup";
                 if (SpotDLDownloader.isDownloading) {
                     long cycle = (System.currentTimeMillis() / 250) % 4;
@@ -128,15 +128,15 @@ public class MediaControlScreen extends Screen {
                 int titleWidth = this.font.width(titleStr);
                 guiGraphics.text(this.font, titleStr, startX + (CARD_WIDTH - titleWidth) / 2, startY + 14, 0xFF3897F0, false);
                 
-                // Draw Close Button (X)
+                
                 int closeColor = isMenuHovered ? 0xFFFF2D55 : 0xFF888888;
                 drawCloseIcon(guiGraphics, menuX, menuY + 1, closeColor);
 
-                // Draw Input Labels
+                
                 int labelWidth = this.font.width("Spotify Link");
                 guiGraphics.text(this.font, "Spotify Link", startX + (CARD_WIDTH - labelWidth) / 2, startY + 36, 0xFFAAAAAA, false);
 
-                // Save button
+                
                 int saveX = startX + (CARD_WIDTH - 100) / 2;
                 int saveY = startY + 86;
                 boolean isSaveHovered = isHovering(mouseX, mouseY, saveX, saveY - 2, 100, 16);
@@ -153,13 +153,13 @@ public class MediaControlScreen extends Screen {
                     guiGraphics.fill(linkX, startY + 120, linkX + linkWidth, startY + 121, 0xFFFFFFFF);
                 }
 
-                // Display currently selected song at the bottom
+                
                 String activeText = "Active: " + (MediaManager.activeKillSoundFile.isEmpty() ? "None" : MediaManager.activeKillSoundFile);
                 String truncatedActive = truncateString(activeText, CARD_WIDTH - 40);
                 int activeWidth = this.font.width(truncatedActive);
                 guiGraphics.text(this.font, truncatedActive, startX + (CARD_WIDTH - activeWidth) / 2, startY + 125, 0xFF888888, false);
 
-                // Draw Gallery
+                
                 int gTitleWidth = this.font.width("Downloaded Sounds");
                 guiGraphics.text(this.font, "Downloaded Sounds", startX + (CARD_WIDTH - gTitleWidth) / 2, startY + 145, 0xFFAAAAAA, false);
                 java.util.List<String> sounds = LocalSoundPlayer.getAvailableSounds();
@@ -270,7 +270,7 @@ public class MediaControlScreen extends Screen {
                 }
 
                 if (showFfmpegWarning) {
-                    // Draw Warning Overlay
+                    
                     drawRoundedRect(guiGraphics, startX + 20, startY + 20, CARD_WIDTH - 40, 90, 0xFF222222);
                     drawRoundedOutline(guiGraphics, startX + 20, startY + 20, CARD_WIDTH - 40, 90, 0xFF444444);
                     
@@ -278,36 +278,36 @@ public class MediaControlScreen extends Screen {
                     guiGraphics.text(this.font, "To download audio, we need", startX + 30, startY + 45, 0xFFCCCCCC, false);
                     guiGraphics.text(this.font, "to download FFmpeg (~80MB).", startX + 30, startY + 55, 0xFFCCCCCC, false);
                     
-                    // Accept button
+                    
                     boolean isAcceptHovered = isHovering(mouseX, mouseY, startX + 30, startY + 80, 80, 16);
                     guiGraphics.fill(startX + 30, startY + 80, startX + 110, startY + 96, isAcceptHovered ? 0xFF33AA33 : 0xFF228822);
                     int acceptWidth = this.font.width("Accept");
                     guiGraphics.text(this.font, "Accept", startX + 30 + (80 - acceptWidth) / 2, startY + 84, 0xFFFFFFFF, false);
                     
-                    // Cancel button
+                    
                     boolean isCancelHovered = isHovering(mouseX, mouseY, startX + 120, startY + 80, 80, 16);
                     guiGraphics.fill(startX + 120, startY + 80, startX + 200, startY + 96, isCancelHovered ? 0xFFAA3333 : 0xFF882222);
                     int cancelWidth = this.font.width("Cancel");
                     guiGraphics.text(this.font, "Cancel", startX + 120 + (80 - cancelWidth) / 2, startY + 84, 0xFFFFFFFF, false);
                 }
         } else {
-            // --- Standard Media Card View ---
+            
             if (this.linkField != null && this.linkField.isVisible()) {
                 this.linkField.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
             }
             
-            // Draw Hamburger Icon in bottom right
+            
             int menuColor = isMenuHovered ? 0xFFFFFFFF : 0xFF888888;
             drawHamburgerIcon(guiGraphics, menuX, menuY, menuColor);
 
-            // Draw Settings (Gear) Icon in bottom right corner
+            
             int gearX = startX + 255;
             int gearY = startY + 106;
             boolean isGearHovered = isHovering(mouseX, mouseY, gearX - 3, gearY - 3, 16, 16);
             int gearColor = isGearHovered ? 0xFFFFFFFF : 0xFF888888;
             drawGearIcon(guiGraphics, gearX, gearY, gearColor);
 
-            // Draw Top Source Header (e.g. Spotify)
+            
             String sourceName = "Select App";
             if (MediaManager.hasSession) {
                 sourceName = MediaManager.source;
@@ -326,7 +326,7 @@ public class MediaControlScreen extends Screen {
             boolean isHeaderHovered = isHovering(mouseX, mouseY, startX + 15, startY + 8, headerTextWidth, 16);
             guiGraphics.text(this.font, headerText, startX + 15, startY + 12, isHeaderHovered ? 0xFFFFFFFF : 0xFFAAAAAA, false);
 
-            // Speaker Button
+            
             int speakerX = startX + 15 + headerTextWidth + 10;
             int speakerY = startY + 13;
             boolean speakerHovered = isHovering(mouseX, mouseY, speakerX - 4, speakerY - 2, 14, 14);
@@ -348,21 +348,21 @@ public class MediaControlScreen extends Screen {
                 guiGraphics.text(this.font, "No media playing", startX + CARD_WIDTH / 2 - this.font.width("No media playing") / 2, startY + CARD_HEIGHT / 2 - 10, 0xFFFFFFFF, false);
                 guiGraphics.text(this.font, "Click top-left to select application", startX + CARD_WIDTH / 2 - this.font.width("Click top-left to select application") / 2, startY + CARD_HEIGHT / 2 + 5, 0xFFAAAAAA, false);
             } else {
-                // --- Draw actual Album Art on the right ---
+                
                 int rightArtSize = 68;
                 int rightArtX = startX + CARD_WIDTH - rightArtSize - 15;
                 int rightArtY = startY + 10;
                 if (artId != null && MediaManager.artworkWidth > 0 && MediaManager.artworkHeight > 0) {
                     guiGraphics.blit(RenderPipelines.GUI_TEXTURED, artId, rightArtX, rightArtY, 0.0f, 0.0f, rightArtSize, rightArtSize, MediaManager.artworkWidth, MediaManager.artworkHeight, MediaManager.artworkWidth, MediaManager.artworkHeight);
                 } else {
-                    // Fallback artwork box
+                    
                     guiGraphics.fill(rightArtX, rightArtY, rightArtX + rightArtSize, rightArtY + rightArtSize, 0xFF2A2A2A);
                     guiGraphics.centeredText(this.font, "🎵", rightArtX + rightArtSize / 2, rightArtY + rightArtSize / 2 - 4, 0xFFAAAAAA);
                 }
 
-                // 4. Draw Song Info (Title & Artist) - Aligned to left and safe from overlapping
+                
                 int textX = startX + 15;
-                int maxTextWidth = CARD_WIDTH - rightArtSize - 40; // 180 pixels (no overlap with art)
+                int maxTextWidth = CARD_WIDTH - rightArtSize - 40; 
                 
                 String titleStr = truncateString(MediaManager.title, maxTextWidth);
                 String artistStr = truncateString(MediaManager.artist, maxTextWidth);
@@ -370,9 +370,9 @@ public class MediaControlScreen extends Screen {
                 guiGraphics.text(this.font, titleStr, textX, startY + 32, 0xFFFFFFFF, false);
                 guiGraphics.text(this.font, artistStr, textX, startY + 46, 0xFF999999, false);
 
-                // 5. Draw Progress Timeline Slider
+                
                 int sliderX = startX + 15;
-                int sliderWidth = CARD_WIDTH - 30; // 250
+                int sliderWidth = CARD_WIDTH - 30; 
                 int sliderY = startY + 80;
                 
                 double currentPosition = dragPosition >= 0 ? dragPosition : MediaManager.getCurrentTrackPosition();
@@ -383,25 +383,25 @@ public class MediaControlScreen extends Screen {
                 
                 int filledWidth = (int) (sliderWidth * progressRatio);
                 
-                // Draw background slider track (semi-transparent white)
+                
                 guiGraphics.fill(sliderX, sliderY, sliderX + sliderWidth, sliderY + 3, 0x33FFFFFF);
-                // Draw filled progress bar (solid white)
+                
                 guiGraphics.fill(sliderX, sliderY, sliderX + filledWidth, sliderY + 3, 0xFFFFFFFF);
-                // Draw slider thumb (white circle/square)
+                
                 int thumbX = sliderX + filledWidth;
                 guiGraphics.fill(thumbX - 2, sliderY - 1, thumbX + 2, sliderY + 4, 0xFFFFFFFF);
 
-                // Draw times
+                
                 String currentStr = formatTime(currentPosition);
                 String durationStr = formatTime(duration);
                 
                 guiGraphics.text(this.font, currentStr, sliderX, startY + 88, 0xFF888888, false);
                 guiGraphics.text(this.font, durationStr, sliderX + sliderWidth - this.font.width(durationStr), startY + 88, 0xFF888888, false);
 
-                // 6. Draw Control Buttons (Interactive)
+                
                 int btnY = startY + 105;
                 
-                // Direct Mic / Sync Mic / Download Button
+                
                 int directMicX = startX + 15;
                 int micX = startX + 45;
                 boolean directMicHovered = isHovering(mouseX, mouseY, directMicX - 4, btnY - 2, 14, 14);
@@ -411,11 +411,11 @@ public class MediaControlScreen extends Screen {
                 boolean isDownloading = SpotDLDownloader.isDownloading;
                 
                 if (matched != null) {
-                    // Megaphone
+                    
                     int directMicColor = isDirectMicActive ? 0xFF1DB954 : (directMicHovered ? 0xFFFFFFFF : 0xFF888888);
                     drawMegaphoneIcon(guiGraphics, directMicX, btnY, directMicColor);
 
-                    // Sync Mic
+                    
                     int mainMicColor = isMicActive ? 0xFF1DB954 : (micHovered ? 0xFFFFFFFF : 0xFF888888);
                     if (isMicActive) {
                         drawMicIcon(guiGraphics, micX, btnY, mainMicColor);
@@ -428,18 +428,18 @@ public class MediaControlScreen extends Screen {
                     drawDownloadIcon(guiGraphics, micX, btnY, micHovered ? 0xFFFFFFFF : 0xFF888888);
                 }
 
-                // Heart Button (Favorite)
+                
                 int heartX = startX + 75;
                 boolean heartHovered = isHovering(mouseX, mouseY, heartX - 4, btnY - 2, 14, 14);
                 int heartColor = isFavorited ? 0xFFFF2D55 : (heartHovered ? 0xFFFFFFFF : 0xFF888888);
                 drawHeartIcon(guiGraphics, heartX, btnY, heartColor, isFavorited);
                 
-                // Previous Button
+                
                 int prevX = startX + 105;
                 boolean prevHovered = isHovering(mouseX, mouseY, prevX - 2, btnY - 2, 14, 14);
                 drawPrevIcon(guiGraphics, prevX, btnY, prevHovered ? 0xFFFFFFFF : 0xFF888888);
                 
-                // Play / Pause Button
+                
                 int playX = startX + 135;
                 boolean playHovered = isHovering(mouseX, mouseY, playX - 2, btnY - 4, 16, 16);
                 if (MediaManager.isPlaying) {
@@ -448,19 +448,19 @@ public class MediaControlScreen extends Screen {
                     drawPlayIcon(guiGraphics, playX, btnY, playHovered ? 0xFFFFFFFF : 0xFF888888);
                 }
                 
-                // Next Button
+                
                 int nextX = startX + 165;
                 boolean nextHovered = isHovering(mouseX, mouseY, nextX - 2, btnY - 2, 14, 14);
                 drawNextIcon(guiGraphics, nextX, btnY, nextHovered ? 0xFFFFFFFF : 0xFF888888);
                 
-                // Repeat Button
+                
                 int repeatX = startX + 195;
                 boolean repeatHovered = isHovering(mouseX, mouseY, repeatX - 4, btnY - 2, 16, 14);
                 int repeatColor = isRepeatEnabled ? 0xFF1DB954 : (repeatHovered ? 0xFFFFFFFF : 0xFF888888);
                 drawRepeatIcon(guiGraphics, repeatX, btnY, repeatColor);
             }
 
-            // Draw Dropdown Overlay if open
+            
             if (isDropdownOpen) {
                 java.util.List<MediaManager.MediaSession> sessions = new java.util.ArrayList<>(MediaManager.activeSessions);
                 sessions.add(new MediaManager.MediaSession("stored_songs", "Stored songs", "", MediaManager.isStoredSongsActive));
@@ -471,9 +471,9 @@ public class MediaControlScreen extends Screen {
                 int rowHeight = 18;
                 int dropdownHeight = Math.max(20, sessions.size() * rowHeight + 4);
 
-                // Draw dropdown background (translucent solid dark grey)
+                
                 guiGraphics.fill(dropdownX, dropdownY, dropdownX + dropdownWidth, dropdownY + dropdownHeight, 0xF51A1A1A);
-                // Draw dropdown border
+                
                 guiGraphics.fill(dropdownX - 1, dropdownY - 1, dropdownX, dropdownY + dropdownHeight + 1, 0x44FFFFFF);
                 guiGraphics.fill(dropdownX + dropdownWidth, dropdownY - 1, dropdownX + dropdownWidth + 1, dropdownY + dropdownHeight + 1, 0x44FFFFFF);
                 guiGraphics.fill(dropdownX, dropdownY - 1, dropdownX + dropdownWidth, dropdownY, 0x44FFFFFF);
@@ -488,7 +488,7 @@ public class MediaControlScreen extends Screen {
                         guiGraphics.fill(dropdownX + 1, rowY, dropdownX + dropdownWidth - 1, rowY + rowHeight, 0x22FFFFFF);
                     }
                     
-                    // Draw icon (12x12)
+                    
                     int iconX = dropdownX + 6;
                     int iconY = rowY + 3;
                     if (sess.iconIdentifier != null) {
@@ -497,7 +497,7 @@ public class MediaControlScreen extends Screen {
                         guiGraphics.text(this.font, "🎵", iconX - 1, iconY - 1, 0xFFAAAAAA, false);
                     }
                     
-                    // Draw app name
+                    
                     String displayName = truncateString(sess.name, 110);
                     int nameColor = sess.isActive ? 0xFF3897F0 : (hovered ? 0xFFFFFFFF : 0xFFCCCCCC);
                     guiGraphics.text(this.font, displayName, dropdownX + 22, rowY + 5, nameColor, false);
@@ -557,14 +557,14 @@ public class MediaControlScreen extends Screen {
     }
 
     private void drawRepeatIcon(GuiGraphicsExtractor g, int x, int y, int color) {
-        // Top arrow curving right
+        
         g.fill(x + 2, y + 1, x + 8, y + 2, color);
         g.fill(x + 1, y + 2, x + 2, y + 4, color);
         g.fill(x + 8, y + 2, x + 9, y + 4, color);
         g.fill(x + 6, y, x + 8, y + 1, color);
         g.fill(x + 6, y + 2, x + 8, y + 3, color);
         
-        // Bottom arrow curving left
+        
         g.fill(x + 2, y + 6, x + 8, y + 7, color);
         g.fill(x + 1, y + 4, x + 2, y + 6, color);
         g.fill(x + 8, y + 4, x + 9, y + 6, color);
@@ -595,7 +595,7 @@ public class MediaControlScreen extends Screen {
         double mouseX = event.x();
         double mouseY = event.y();
         
-        // Menu Button Click (Bottom Right)
+        
         int menuX = startX + 225;
         int menuY = startY + 106;
         boolean clickedMenu = mouseX >= menuX - 3 && mouseX <= menuX + 13 && mouseY >= menuY - 3 && mouseY <= menuY + 13;
@@ -608,7 +608,7 @@ public class MediaControlScreen extends Screen {
             return true;
         }
 
-        // Settings Button Click (Bottom Right)
+        
         int gearX = startX + 255;
         int gearY = startY + 106;
         boolean clickedGear = mouseX >= gearX - 3 && mouseX <= gearX + 13 && mouseY >= gearY - 3 && mouseY <= gearY + 13;
@@ -641,10 +641,10 @@ public class MediaControlScreen extends Screen {
                     showFfmpegWarning = false;
                     return true;
                 }
-                return true; // block other clicks
+                return true; 
             }
 
-            // Gallery click handler
+            
             java.util.List<String> sounds = LocalSoundPlayer.getAvailableSounds();
             int listY = startY + 160;
             for (int i = 0; i < sounds.size(); i++) {
@@ -758,7 +758,7 @@ public class MediaControlScreen extends Screen {
                 }
             }
 
-            // Download button handler
+            
             int saveX = startX + (CARD_WIDTH - 100) / 2;
             int saveY = startY + 86;
             if (mouseX >= saveX && mouseX <= saveX + 100 && mouseY >= saveY - 2 && mouseY <= saveY + 12) {
@@ -776,7 +776,7 @@ public class MediaControlScreen extends Screen {
                 }
                 if (!link.isEmpty()) {
                     if (!isSearchQuery && !link.contains("spotify.com")) {
-                        this.linkField.setTextColor(0xFFFF5555); // Red text
+                        this.linkField.setTextColor(0xFFFF5555); 
                         if (this.minecraft.player != null) {
                             this.minecraft.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00a7c[SpotifyMod] Please use a valid Spotify link!"));
                         }
@@ -788,7 +788,7 @@ public class MediaControlScreen extends Screen {
                     updateWidgetVisibilities();
                 }
             }
-            // Link handler
+            
             String linkText = "Open Spotify";
             int linkWidth = this.font.width(linkText);
             int linkX = startX + (CARD_WIDTH - linkWidth) / 2;
@@ -802,7 +802,7 @@ public class MediaControlScreen extends Screen {
             return true;
         }
 
-        // Calculate header toggle button bounds
+        
         String sourceName = "Select App";
         if (MediaManager.hasSession) {
             sourceName = MediaManager.source;
@@ -870,7 +870,7 @@ public class MediaControlScreen extends Screen {
         int sliderWidth = CARD_WIDTH - 30;
         int sliderY = startY + 80;
 
-        // Progress bar click
+        
         if (mouseX >= sliderX && mouseX <= sliderX + sliderWidth && mouseY >= sliderY - 4 && mouseY <= sliderY + 6) {
             this.isDraggingSlider = true;
             updatePositionFromMouse(mouseX);
@@ -879,14 +879,14 @@ public class MediaControlScreen extends Screen {
 
         int btnY = startY + 105;
 
-        // Direct Mic (Megaphone) Button
+        
         int directMicX = startX + 15;
         if (mouseX >= directMicX - 4 && mouseX <= directMicX + 14 && mouseY >= btnY - 2 && mouseY <= btnY + 12) {
             String matched = getMatchedFile();
             if (matched != null) {
                 isDirectMicActive = !isDirectMicActive;
                 if (isDirectMicActive) {
-                    isMicActive = false; // turn off sync mic
+                    isMicActive = false; 
                     currentMicFile = matched;
                     VoicechatAudioQueue.stop();
                     VoicechatAudioQueue.playSound(matched);
@@ -905,14 +905,14 @@ public class MediaControlScreen extends Screen {
             return true;
         }
 
-        // Sync Mic Button
+        
         int micX = startX + 45;
         if (mouseX >= micX - 4 && mouseX <= micX + 14 && mouseY >= btnY - 2 && mouseY <= btnY + 12) {
             String matched = getMatchedFile();
             if (matched != null) {
                 isMicActive = !isMicActive;
                 if (isMicActive) {
-                    isDirectMicActive = false; // turn off direct mic
+                    isDirectMicActive = false; 
                     currentMicFile = matched;
                     VoicechatAudioQueue.stop();
                     VoicechatAudioQueue.playSound(matched);
@@ -941,7 +941,7 @@ public class MediaControlScreen extends Screen {
             return true;
         }
 
-        // Heart Button
+        
         if (isHovering(mouseX, mouseY, startX + 75 - 4, btnY - 2, 14, 14)) {
             MediaManager.toggleLike();
             this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
@@ -949,7 +949,7 @@ public class MediaControlScreen extends Screen {
             return true;
         }
 
-        // Previous Button
+        
         if (isHovering(mouseX, mouseY, startX + 105 - 2, btnY - 2, 14, 14)) {
             MediaManager.sendCommand("prev");
             this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
@@ -957,7 +957,7 @@ public class MediaControlScreen extends Screen {
             return true;
         }
 
-        // Play/Pause Button
+        
         if (isHovering(mouseX, mouseY, startX + 135 - 2, btnY - 4, 16, 16)) {
             MediaManager.sendCommand("toggle");
             this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
@@ -965,7 +965,7 @@ public class MediaControlScreen extends Screen {
             return true;
         }
 
-        // Next Button
+        
         if (isHovering(mouseX, mouseY, startX + 165 - 2, btnY - 2, 14, 14)) {
             MediaManager.sendCommand("next");
             this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
@@ -973,7 +973,7 @@ public class MediaControlScreen extends Screen {
             return true;
         }
 
-        // Repeat Button
+        
         if (isHovering(mouseX, mouseY, startX + 195 - 4, btnY - 2, 16, 14)) {
             isRepeatEnabled = !isRepeatEnabled;
             MediaManager.sendCommand("repeat");
@@ -982,7 +982,7 @@ public class MediaControlScreen extends Screen {
             return true;
         }
 
-        // Speaker Button
+        
         int speakerX = startX + 15 + headerTextWidth + 10;
         int speakerY = startY + 13;
 
@@ -1146,7 +1146,7 @@ public class MediaControlScreen extends Screen {
         g.fill(x - 1, y + 2, x, y + height - 2, color);
         g.fill(x + width, y + 2, x + width + 1, y + height - 2, color);
         
-        // Corners
+        
         g.fill(x + 1, y, x + 2, y + 1, color);
         g.fill(x, y + 1, x + 1, y + 2, color);
         g.fill(x + width - 2, y, x + width - 1, y + 1, color);
@@ -1161,7 +1161,7 @@ public class MediaControlScreen extends Screen {
     public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
         if (isSetupOpen) {
             if (showFfmpegWarning) {
-                return true; // block keyboard input during warning
+                return true; 
             }
             int keyCode = event.key();
             if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER) {
@@ -1228,7 +1228,7 @@ public class MediaControlScreen extends Screen {
         g.fill(x + 2, y, x + 6, y + 8, color);
         g.fill(x, y + 2, x + 8, y + 6, color);
         g.fill(x + 1, y + 1, x + 7, y + 7, color);
-        g.fill(x + 3, y + 3, x + 5, y + 5, 0xFF121212); // inner hole
+        g.fill(x + 3, y + 3, x + 5, y + 5, 0xFF121212); 
     }
 
     private void drawCloseIcon(GuiGraphicsExtractor g, int x, int y, int color) {
@@ -1239,12 +1239,12 @@ public class MediaControlScreen extends Screen {
     }
 
     private void drawSpeakerIcon(GuiGraphicsExtractor g, int x, int y, int color) {
-        // Speaker base (2x4 rect)
+        
         g.fill(x, y + 2, x + 2, y + 6, color);
-        // Speaker cone (2x8 trapezoid)
+        
         g.fill(x + 2, y + 1, x + 3, y + 7, color);
         g.fill(x + 3, y, x + 4, y + 8, color);
-        // Sound wave lines
+        
         g.fill(x + 5, y + 2, x + 6, y + 3, color);
         g.fill(x + 5, y + 5, x + 6, y + 6, color);
         g.fill(x + 6, y + 3, x + 7, y + 5, color);
@@ -1252,27 +1252,27 @@ public class MediaControlScreen extends Screen {
 
     @Override
     public boolean isPauseScreen() {
-        return false; // don't pause the game when checking/managing music!
+        return false; 
     }
 
     private void drawMicIcon(GuiGraphicsExtractor g, int x, int y, int color) {
-        g.fill(x + 2, y, x + 5, y + 4, color); // Mic capsule
-        g.fill(x + 1, y + 2, x + 2, y + 5, color); // Left curve
-        g.fill(x + 5, y + 2, x + 6, y + 5, color); // Right curve
-        g.fill(x + 2, y + 5, x + 5, y + 6, color); // Bottom curve
-        g.fill(x + 3, y + 6, x + 4, y + 8, color); // Stand
-        g.fill(x + 1, y + 7, x + 6, y + 8, color); // Base
+        g.fill(x + 2, y, x + 5, y + 4, color); 
+        g.fill(x + 1, y + 2, x + 2, y + 5, color); 
+        g.fill(x + 5, y + 2, x + 6, y + 5, color); 
+        g.fill(x + 2, y + 5, x + 5, y + 6, color); 
+        g.fill(x + 3, y + 6, x + 4, y + 8, color); 
+        g.fill(x + 1, y + 7, x + 6, y + 8, color); 
     }
 
     private void drawMicClosedIcon(GuiGraphicsExtractor g, int x, int y, int color) {
-        // Same mic shape
-        g.fill(x + 2, y, x + 5, y + 4, color); // Mic capsule
-        g.fill(x + 1, y + 2, x + 2, y + 5, color); // Left curve
-        g.fill(x + 5, y + 2, x + 6, y + 5, color); // Right curve
-        g.fill(x + 2, y + 5, x + 5, y + 6, color); // Bottom curve
-        g.fill(x + 3, y + 6, x + 4, y + 8, color); // Stand
-        g.fill(x + 1, y + 7, x + 6, y + 8, color); // Base
-        // Diagonal strikethrough line (red)
+        
+        g.fill(x + 2, y, x + 5, y + 4, color); 
+        g.fill(x + 1, y + 2, x + 2, y + 5, color); 
+        g.fill(x + 5, y + 2, x + 6, y + 5, color); 
+        g.fill(x + 2, y + 5, x + 5, y + 6, color); 
+        g.fill(x + 3, y + 6, x + 4, y + 8, color); 
+        g.fill(x + 1, y + 7, x + 6, y + 8, color); 
+        
         int red = 0xFFFF4444;
         g.fill(x, y + 7, x + 1, y + 8, red);
         g.fill(x + 1, y + 6, x + 2, y + 7, red);
@@ -1321,15 +1321,15 @@ public class MediaControlScreen extends Screen {
     }
 
     private void drawMegaphoneIcon(GuiGraphicsExtractor g, int x, int y, int color) {
-        // Megaphone back nozzle
+        
         g.fill(x, y + 2, x + 2, y + 6, color);
-        // Middle cone
+        
         g.fill(x + 2, y + 1, x + 4, y + 7, color);
-        // Bell mouth
+        
         g.fill(x + 4, y, x + 6, y + 8, color);
-        // Handle (flush with bottom baseline)
+        
         g.fill(x + 2, y + 7, x + 3, y + 8, color);
-        // Sound waves (matching speaker style)
+        
         g.fill(x + 8, y + 2, x + 9, y + 6, color);
         g.fill(x + 10, y + 1, x + 11, y + 7, color);
     }

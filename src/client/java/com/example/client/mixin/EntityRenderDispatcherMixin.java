@@ -19,8 +19,8 @@ public class EntityRenderDispatcherMixin {
     @Inject(method = "submit", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;popPose()V", shift = At.Shift.BEFORE))
     private void onSubmit(EntityRenderState renderState, CameraRenderState camera, double x, double y, double z, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CallbackInfo ci) {
         
-        // ONLY do the brute force rendering if Dawn Client is loaded.
-        if (!FabricLoader.getInstance().isModLoaded("dawn")) {
+        
+        if (!FabricLoader.getInstance().isModLoaded("dawn") && !com.example.client.AudioStrikeConfig.getInstance().forceDawnClientCompat) {
             return;
         }
 
@@ -46,13 +46,13 @@ public class EntityRenderDispatcherMixin {
                         int lines = 1;
                         if (avatarState.scoreText != null) lines++;
                         
-                        // Push up past the name tag and any custom Dawn background (2.5 lines total)
+                        
                         float translationLines = lines + 1.5f;
 
-                        // PoseStack is already pushed and translated to the entity's relative position here!
+                        
                         poseStack.pushPose();
                         
-                        // translate UP above the head
+                        
                         poseStack.translate(0.0f, 9.0f * 1.15f * 0.025f * translationLines, 0.0f);
                         
                         submitNodeCollector.submitNameTag(poseStack, avatarState.nameTagAttachment, 0, songComponent, !avatarState.isDiscrete, avatarState.lightCoords, avatarState.distanceToCameraSq, camera);
